@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电工与电子技术 - 题库系统（云同步版）</title>
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            --primary: #2c6b9e;
+            --primary-dark: #1a4a6e;
+            --primary-light: #4a8bc2;
+            --primary-bg: #e8f0fe;
+            --success: #2e7d32;
+            --danger: #c62828;
+            --warning: #f57c00;
+            --gray: #757575;
+            --light-gray: #f5f7fa;
+            --border: #dde1e6;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --radius: 10px;
+            --transition: 0.25s ease;
+            --font: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+        }
+
+        /* ===== Reset & Base ===== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--light-gray);
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        /* ===== App Container ===== */
+        #app {
+            width: 100%;
+            max-width: 1440px;
+            height: 100vh;
+            max-height: 900px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 16px;
+            position: relative;
+        }
+
+        /* ===== Login / Register ===== */
+        .auth-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #e8f0fe 0%, #d4e4f7 100%);
+        }
+
+        .auth-card {
+            background: #fff;
+            padding: 48px 40px 40px;
+            border-radius: 20px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.10);
+            width: 100%;
+            max-width: 460px;
+            transition: var(--transition);
+        }
+
+        .auth-card h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .auth-card .subtitle {
+            text-align: center;
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .auth-card .subtitle span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+        }
+
+        .auth-tabs button {
+            flex: 1;
+            border: none;
+            padding: 10px 0;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+            color: var(--primary);
+            transition: var(--transition);
+        }
+
+        .auth-tabs button.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .auth-tabs button:not(.active):hover {
+            background: var(--primary-bg);
+        }
+
+        .auth-form .form-group {
+            margin-bottom: 18px;
+        }
+
+        .auth-form label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #334155;
+        }
+
+        .auth-form input,
+        .auth-form select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: var(--transition);
+            background: #fafbfc;
+            font-family: var(--font);
+        }
+
+        .auth-form input:focus,
+        .auth-form select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(44, 107, 158, 0.12);
+            background: #fff;
+        }
+
+        .auth-form .btn-primary {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 6px;
+        }
+
+        .auth-form .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(44, 107, 158, 0.3);
+        }
+
+        .auth-form .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .auth-error {
+            color: var(--danger);
+            font-size: 14px;
+            text-align: center;
+            margin-top: 12px;
+            min-height: 22px;
+        }
+
+        .auth-role-hint {
+            font-size: 13px;
+            color: var(--gray);
+            text-align: center;
+            margin-top: 14px;
+            background: var(--light-gray);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        /* ===== Main Layout ===== */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ===== Sidebar ===== */
+        .sidebar {
+            width: 220px;
+            background: var(--primary-dark);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+            margin-bottom: 16px;
+        }
+
+        .sidebar-brand h2 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .sidebar-brand small {
+            display: block;
+            font-size: 12px;
+            opacity: 0.70;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .sidebar .user-info {
+            padding: 0 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 12px;
+        }
+
+        .sidebar .user-info .name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .sidebar .user-info .role-tag {
+            display: inline-block;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.18);
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-top: 3px;
+        }
+
+        .sidebar .user-info .extra {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .sidebar .nav {
+            list-style: none;
+            padding: 0 10px;
+            flex: 1;
+        }
+
+        .sidebar .nav li {
+            margin-bottom: 2px;
+        }
+
+        .sidebar .nav li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .sidebar .nav li a:hover {
+            background: rgba(255, 255, 255, 0.10);
+            color: #fff;
+        }
+
+        .sidebar .nav li a.active {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
+
+        .sidebar .nav li a .icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar .nav li a .badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: #fff;
+            font-size: 11px;
+            padding: 1px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar .logout-btn {
+            margin: 12px 16px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.80);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .sidebar .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+        }
+
+        /* ===== Content ===== */
+        .content {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            background: #fafcfe;
+        }
+
+        .content-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .content-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .content-header .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(44, 107, 158, 0.25);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #1b5e20;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #b71c1c;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #fff;
+        }
+        .btn-warning:hover {
+            background: #e65100;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        .btn-outline:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 12px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ===== Question Cards ===== */
+        .question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .question-card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--primary-light);
+            transition: var(--transition);
+        }
+
+        .question-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+        }
+
+        .question-card .q-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .question-card .q-type {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 12px;
+            border-radius: 20px;
+            background: var(--primary-bg);
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .question-card .q-status {
+            font-size: 12px;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .q-status.pending {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .q-status.approved {
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+        .q-status.rejected {
+            background: #ffebee;
+            color: #b71c1c;
+        }
+
+        .question-card .q-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 4px 0 6px;
+        }
+
+        .question-card .q-content {
+            font-size: 15px;
+            color: #334155;
+            line-height: 1.6;
+            margin: 6px 0;
+        }
+
+        .question-card .q-options {
+            list-style: none;
+            padding: 6px 0 2px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .question-card .q-options li {
+            font-size: 14px;
+            padding: 2px 0;
+            color: #334155;
+        }
+
+        .question-card .q-answer-wrapper {
+            margin-top: 10px;
+            border-left: 3px solid var(--primary-light);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .question-card .q-answer-toggle {
+            display: inline-block;
+            padding: 6px 16px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .question-card .q-answer-toggle:hover {
+            background: var(--primary-dark);
+        }
+
+        .question-card .q-answer-content {
+            padding: 12px 16px;
+            background: #f0f7ff;
+            display: none;
+            font-size: 14px;
+        }
+        .question-card .q-answer-content.visible {
+            display: block;
+        }
+
+        .question-card .q-answer-content strong {
+            color: var(--primary-dark);
+        }
+
+        .question-card .q-answer-content .answer-image {
+            margin-top: 8px;
+            max-width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .question-card .q-answer-content .answer-image img {
+            max-width: 100%;
+            max-height: 250px;
+            display: block;
+        }
+
+        .question-card .q-image {
+            margin-top: 12px;
+            max-width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .question-card .q-image img {
+            max-width: 100%;
+            max-height: 300px;
+            display: block;
+        }
+
+        .question-card .q-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--gray);
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+
+        .question-card .q-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .question-card .q-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state .icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h4 {
+            font-size: 18px;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        /* ===== Filter Bar ===== */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            background: #fff;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .filter-bar label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 6px 12px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fafbfc;
+            font-family: var(--font);
+        }
+
+        .filter-bar select:focus,
+        .filter-bar input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .filter-bar .search-input {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            max-width: 720px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px 36px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.20);
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 20px;
+        }
+
+        .modal .form-group {
+            margin-bottom: 16px;
+        }
+
+        .modal .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #334155;
+        }
+
+        .modal .form-group label .required {
+            color: var(--danger);
+            margin-left: 2px;
+        }
+
+        .modal .form-group input,
+        .modal .form-group select,
+        .modal .form-group textarea {
+            width: 100%;
+            padding: 9px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: var(--font);
+            background: #fafbfc;
+            transition: var(--transition);
+        }
+
+        .modal .form-group input:focus,
+        .modal .form-group select:focus,
+        .modal .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(44, 107, 158, 0.10);
+            background: #fff;
+        }
+
+        .modal .form-group textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        .modal .form-group .file-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .modal .form-group .file-input-wrapper input[type="file"] {
+            flex: 1;
+            padding: 8px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            background: #fafbfc;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .modal .form-group .file-input-wrapper input[type="file"]:hover {
+            border-color: var(--primary-light);
+        }
+
+        .modal .form-group .image-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .modal .form-group .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            display: block;
+        }
+
+        .modal .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .modal .modal-actions .btn {
+            padding: 10px 28px;
+        }
+
+        /* ===== Profile page ===== */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 700px;
+        }
+
+        .profile-grid .form-group {
+            margin-bottom: 0;
+        }
+
+        .profile-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .profile-grid .readonly-field {
+            background: #f0f2f5;
+            padding: 9px 14px;
+            border-radius: 8px;
+            color: #475569;
+            border: 2px solid var(--border);
+        }
+
+        .profile-divider {
+            grid-column: 1 / -1;
+            border-top: 2px solid var(--border);
+            margin: 8px 0 12px;
+            padding-top: 8px;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        /* ===== Stats table ===== */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .stats-table th {
+            background: var(--primary-dark);
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        .stats-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stats-table tr:hover td {
+            background: #f8faff;
+        }
+
+        .stats-table .num {
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .stats-table .total {
+            background: #f0f7ff;
+            font-weight: 700;
+        }
+
+        /* ===== User Management Table ===== */
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .user-table th {
+            background: var(--primary-dark);
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        .user-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-table tr:hover td {
+            background: #f8faff;
+        }
+
+        .user-table .role-badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .role-badge.admin {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .role-badge.teacher {
+            background: #e3f2fd;
+            color: #0d47a1;
+        }
+        .role-badge.student {
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+
+        .user-table .delete-btn {
+            padding: 4px 14px;
+            font-size: 12px;
+        }
+
+        /* ===== Utility ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+        .gap-8 {
+            gap: 8px;
+        }
+        .flex-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .tag {
+            display: inline-block;
+            font-size: 12px;
+            padding: 1px 10px;
+            border-radius: 20px;
+            background: var(--light-gray);
+            color: #475569;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 820px) {
+            #app {
+                max-height: none;
+                height: auto;
+                border-radius: 12px;
+                margin: 8px;
+            }
+            .main-layout {
+                flex-direction: column;
+                height: auto;
+            }
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 12px 16px;
+                align-items: center;
+                gap: 8px;
+                overflow-y: visible;
+                flex-shrink: 0;
+            }
+            .sidebar-brand {
+                padding: 0;
+                border: none;
+                margin: 0;
+                flex: 1;
+            }
+            .sidebar-brand h2 {
+                font-size: 16px;
+            }
+            .sidebar-brand small {
+                display: none;
+            }
+            .sidebar .user-info {
+                padding: 0;
+                border: none;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .sidebar .user-info .name {
+                font-size: 13px;
+            }
+            .sidebar .user-info .role-tag {
+                font-size: 10px;
+            }
+            .sidebar .nav {
+                display: flex;
+                flex-wrap: wrap;
+                padding: 0;
+                margin: 6px 0;
+                flex: 1 1 100%;
+                gap: 2px;
+            }
+            .sidebar .nav li {
+                margin: 0;
+            }
+            .sidebar .nav li a {
+                padding: 6px 12px;
+                font-size: 13px;
+                gap: 6px;
+            }
+            .sidebar .nav li a .icon {
+                font-size: 16px;
+                width: 20px;
+            }
+            .sidebar .logout-btn {
+                margin: 0;
+                padding: 6px 14px;
+                font-size: 13px;
+            }
+            .content {
+                padding: 16px;
+            }
+            .content-header h3 {
+                font-size: 18px;
+            }
+            .modal {
+                padding: 20px;
+                margin: 10px;
+            }
+            .modal .form-row {
+                grid-template-columns: 1fr;
+            }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-bar .search-input {
+                min-width: auto;
+            }
+            .auth-card {
+                padding: 28px 20px;
+            }
+            .question-card {
+                padding: 16px;
+            }
+            .sidebar .nav li a .badge {
+                font-size: 10px;
+                padding: 0 6px;
+            }
+            .profile-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-table,
+            .user-table {
+                font-size: 13px;
+            }
+            .stats-table th,
+            .stats-table td,
+            .user-table th,
+            .user-table td {
+                padding: 8px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 16px;
+            }
+            .auth-card {
+                padding: 20px 16px;
+            }
+            .auth-card h1 {
+                font-size: 22px;
+            }
+            .content {
+                padding: 12px;
+            }
+            .question-card .q-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .modal .modal-actions {
+                flex-direction: column;
+            }
+            .modal .modal-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .sidebar .nav li a {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            .sidebar .nav li a .icon {
+                font-size: 14px;
+                width: 18px;
+            }
+            .stats-table,
+            .user-table {
+                font-size: 12px;
+            }
+            .stats-table th,
+            .stats-table td,
+            .user-table th,
+            .user-table td {
+                padding: 6px 8px;
+            }
+        }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            width: 100%;
+        }
+
+        .toast {
+            padding: 14px 20px;
+            border-radius: 10px;
+            background: #1e293b;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+        .toast.error {
+            background: var(--danger);
+        }
+        .toast.warning {
+            background: var(--warning);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== APP ===== -->
+    <div id="app">
+        <!-- ===== AUTH ===== -->
+        <div id="authContainer" class="auth-container">
+            <div class="auth-card">
+                <h1>⚡ 电工电子题库</h1>
+                <p class="subtitle">电工与电子技术 · <span>课程题库系统（云同步版）</span></p>
+                <div class="auth-tabs">
+                    <button class="active" data-tab="login">登录</button>
+                    <button data-tab="register">注册</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" id="loginUsername" placeholder="请输入用户名" value="" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="loginPassword" placeholder="请输入密码" value="" required>
+                    </div>
+                    <button type="submit" class="btn-primary">登 录</button>
+                    <div class="auth-error" id="loginError"></div>
+                    <div class="auth-role-hint">👤 管理员: admin / 123456 &nbsp;|&nbsp; 👨‍🏫 老师: teacher / 123456 &nbsp;|&nbsp; 🧑‍🎓 学生: student / 123456</div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="auth-form hidden">
+                    <div class="form-group">
+                        <label>姓名 <span class="required">*</span></label>
+                        <input type="text" id="regName" placeholder="请输入真实姓名" required>
+                    </div>
+                    <div class="form-group">
+                        <label>用户名 <span class="required">*</span></label>
+                        <input type="text" id="regUsername" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码 <span class="required">*</span></label>
+                        <input type="password" id="regPassword" placeholder="至少6位" required>
+                    </div>
+                    <div class="form-group">
+                        <label>角色 <span class="required">*</span></label>
+                        <select id="regRole">
+                            <option value="student">学生</option>
+                            <option value="teacher">老师</option>
+                    </select>
+                    </div>
+                    <div class="form-group" id="studentIdGroup">
+                        <label>学号 <span class="required" id="studentIdRequired">*</span></label>
+                        <input type="text" id="regStudentId" placeholder="请输入学号">
+                    </div>
+                    <div class="form-group" id="classGroup">
+                        <label>专业班级 <span class="required" id="classRequired">*</span></label>
+                        <input type="text" id="regClass" placeholder="如：电子工程1班">
+                    </div>
+                    <button type="submit" class="btn-primary">注 册</button>
+                    <div class="auth-error" id="registerError"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== MAIN ===== -->
+        <div id="mainContainer" class="main-layout hidden">
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <h2>⚡ 电工电子</h2>
+                    <small>题库系统 v1.0</small>
+                </div>
+                <div class="user-info">
+                    <div class="name" id="sidebarUserName">—</div>
+                    <div class="role-tag" id="sidebarUserRole">—</div>
+                    <div class="extra" id="sidebarUserExtra"></div>
+                </div>
+                <ul class="nav">
+                    <li><a class="active" data-page="browse"><span class="icon">📚</span> 题库浏览</a></li>
+                    <li><a data-page="add"><span class="icon">➕</span> 添加题目</a></li>
+                    <li><a data-page="my"><span class="icon">📝</span> 我的题目</a></li>
+                    <li id="navReview" class="hidden"><a data-page="review"><span class="icon">🔍</span> 审核管理 <span class="badge" id="reviewBadge">0</span></a></li>
+                    <li id="navStats" class="hidden"><a data-page="stats"><span class="icon">📊</span> 学生统计</a></li>
+                    <li id="navUsers" class="hidden"><a data-page="users"><span class="icon">👥</span> 用户管理</a></li>
+                    <li><a data-page="profile"><span class="icon">👤</span> 个人信息</a></li>
+                </ul>
+                <button class="logout-btn" id="logoutBtn">🚪 退出登录</button>
+            </aside>
+
+            <!-- Content -->
+            <div class="content">
+
+                <!-- ===== PAGE: BROWSE ===== -->
+                <div id="pageBrowse" class="page-content">
+                    <div class="content-header">
+                        <h3>📚 题库浏览</h3>
+                        <div class="actions">
+                            <button class="btn btn-primary btn-sm" onclick="navigateTo('add')">➕ 添加题目</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar">
+                        <label>题型
+                            <select id="filterType">
+                                <option value="all">全部</option>
+                                <option value="choice">选择题</option>
+                                <option value="fill">填空题</option>
+                                <option value="calculate">计算题</option>
+                                <option value="design">设计题</option>
+                            </select>
+                        </label>
+                        <label>状态
+                            <select id="filterStatus">
+                                <option value="all">全部</option>
+                                <option value="approved">已通过</option>
+                                <option value="pending">待审核</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                        </label>
+                        <input class="search-input" type="text" id="filterSearch" placeholder="🔍 搜索题目...">
+                    </div>
+
+                    <div id="browseList" class="question-list"></div>
+                </div>
+
+                <!-- ===== PAGE: ADD ===== -->
+                <div id="pageAdd" class="page-content hidden">
+                    <div class="content-header">
+                        <h3>➕ 添加题目</h3>
+                    </div>
+                    <form id="addForm" class="modal" style="box-shadow:none;padding:0;max-width:100%;">
+                        <div class="form-group">
+                            <label>题型 <span class="required">*</span></label>
+                            <select id="addType" required>
+                                <option value="choice">选择题</option>
+                                <option value="fill">填空题</option>
+                                <option value="calculate">计算题</option>
+                                <option value="design">设计题</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>题目标题 <span class="required">*</span></label>
+                            <input type="text" id="addTitle" placeholder="例：欧姆定律的应用" required>
+                        </div>
+                        <div class="form-group">
+                            <label>题目内容 <span class="required">*</span></label>
+                            <textarea id="addContent" rows="3" placeholder="请详细描述题目..." required></textarea>
+                        </div>
+                        <div class="form-group" id="addOptionsGroup">
+                            <label>选项 <span class="required">*</span>（每行一个选项）</label>
+                            <textarea id="addOptions" rows="4" placeholder="A. 选项一&#10;B. 选项二&#10;C. 选项三&#10;D. 选项四"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>答案 <span class="required">*</span></label>
+                            <input type="text" id="addAnswer" placeholder="填写正确答案（选择题填 A/B/C/D）" required>
+                        </div>
+                        <!-- 答案图片（仅计算题和设计题可见） -->
+                        <div class="form-group" id="addAnswerImageGroup" style="display:none;">
+                            <label>答案图片（可选，适用于计算/设计题）</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="addAnswerImage" accept="image/*">
+                                <span style="font-size:13px;color:var(--gray);">支持 JPG / PNG / GIF</span>
+                            </div>
+                            <div class="image-preview hidden" id="addAnswerImagePreview">
+                                <img id="addAnswerImagePreviewImg" src="" alt="答案图片预览">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>电路图（可选）</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="addImage" accept="image/*">
+                                <span style="font-size:13px;color:var(--gray);">支持 JPG / PNG / GIF</span>
+                            </div>
+                            <div class="image-preview hidden" id="addImagePreview">
+                                <img id="addImagePreviewImg" src="" alt="电路图预览">
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-outline" onclick="navigateTo('browse')">取消</button>
+                            <button type="submit" class="btn btn-primary">提交题目</button>
+                        </div>
+                        <div id="addFormMsg" class="auth-error mt-8"></div>
+                    </form>
+                </div>
+
+                <!-- ===== PAGE: MY ===== -->
+                <div id="pageMy" class="page-content hidden">
+                    <div class="content-header">
+                        <h3>📝 我的题目</h3>
+                    </div>
+                    <div class="filter-bar">
+                        <label>题型
+                            <select id="myFilterType">
+                                <option value="all">全部</option>
+                                <option value="choice">选择题</option>
+                                <option value="fill">填空题</option>
+                                <option value="calculate">计算题</option>
+                                <option value="design">设计题</option>
+                            </select>
+                        </label>
+                        <label>状态
+                            <select id="myFilterStatus">
+                                <option value="all">全部</option>
+                                <option value="approved">已通过</option>
+                                <option value="pending">待审核</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="myList" class="question-list"></div>
+                </div>
+
+                <!-- ===== PAGE: REVIEW ===== -->
+                <div id="pageReview" class="page-content hidden">
+                    <div class="content-header">
+                        <h3>🔍 审核管理</h3>
+                        <span style="font-size:14px;color:var(--gray);">待审核题目需老师审阅</span>
+                    </div>
+                    <div id="reviewList" class="question-list"></div>
+                </div>
+
+                <!-- ===== PAGE: STATS ===== -->
+                <div id="pageStats" class="page-content hidden">
+                    <div class="content-header">
+                        <h3>📊 学生出题统计</h3>
+                        <span style="font-size:14px;color:var(--gray);">各学生提交的题目数量分布</span>
+                    </div>
+                    <div id="statsContainer">
+                        <!-- 由 JS 动态渲染 -->
+                    </div>
+                </div>
+
+                <!-- ===== PAGE: USERS ===== -->
+                <div id="pageUsers" class="page-content hidden">
+                    <div class="content-header">
+                        <h3>👥 用户管理</h3>
+                        <span style="font-size:14px;color:var(--gray);">管理员可查看并删除用户（删除后其所有题目也将被清除）</span>
+                    </div>
+                    <div id="usersContainer">
+                        <!-- 由 JS 动态渲染 -->
+                    </div>
+                </div>
+
+                <!-- ===== PAGE: PROFILE ===== -->
+               <!-- ===== PAGE: PROFILE ===== -->
+<div id="pageProfile" class="page-content hidden">
+    <div class="content-header">
+        <h3>👤 个人信息</h3>
+    </div>
+    <form id="profileForm" class="profile-grid">
+        <!-- 姓名 -->
+        <div class="form-group full-width">
+            <label>姓名 <span class="required">*</span></label>
+            <input type="text" id="profileName" required>
+        </div>
+        <!-- 老师/管理员专用字段 -->
+        <div class="form-group" id="profileDegreeGroup">
+            <label>学位</label>
+            <input type="text" id="profileDegree" placeholder="如：博士、硕士">
+        </div>
+        <div class="form-group" id="profileUnitGroup">
+            <label>单位</label>
+            <input type="text" id="profileUnit" placeholder="所在院校或机构">
+        </div>
+        <div class="form-group" id="profileQQGroup">
+            <label>QQ</label>
+            <input type="text" id="profileQQ" placeholder="QQ号码">
+        </div>
+        <div class="form-group" id="profilePhoneGroup">
+            <label>电话</label>
+            <input type="text" id="profilePhone" placeholder="手机号码">
+        </div>
+        <!-- 学生只读字段 -->
+        <div class="form-group" id="profileStudentIdGroup" style="display:none;">
+            <label>学号</label>
+            <div class="readonly-field" id="profileStudentIdDisplay"></div>
+        </div>
+        <div class="form-group" id="profileClassGroup" style="display:none;">
+            <label>专业班级</label>
+            <div class="readonly-field" id="profileClassDisplay"></div>
+        </div>
+        <!-- 密码修改区域 -->
+        <div class="profile-divider full-width">🔑 修改密码</div>
+        <div class="form-group full-width">
+            <label>当前密码 <span class="required">*</span></label>
+            <input type="password" id="profileOldPassword" placeholder="请输入当前密码">
+        </div>
+        <div class="form-group full-width">
+            <label>新密码 <span class="required">*</span></label>
+            <input type="password" id="profileNewPassword" placeholder="至少6位">
+        </div>
+        <div class="form-group full-width">
+            <label>确认新密码 <span class="required">*</span></label>
+            <input type="password" id="profileConfirmPassword" placeholder="再次输入新密码">
+        </div>
+        <!-- 提交按钮 -->
+        <div class="modal-actions full-width" style="border-top: none; padding-top: 0; margin-top: 12px;">
+            <button type="submit" class="btn btn-primary">保存个人信息</button>
+        </div>
+        <div id="profileMsg" class="auth-error full-width"></div>
+    </form>
+</div>
+
+            </div><!-- /content -->
+        </div><!-- /main-layout -->
+    </div>
+
+    <!-- ===== MODAL (Edit / Detail) ===== -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal" id="modalContent">
+            <!-- dynamically filled -->
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ============================================================ -->
+    <!-- ===== SUPABASE SDK & CONFIG ===== -->
+    <!-- ============================================================ -->
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js">
+</script>
+
+<script>
+    // ============================================================
+    // SUPABASE CONFIGURATION - 请修改为您的实际值
+    // ============================================================
+    const SUPABASE_URL = 'https://irocrpsdjxswriqtnysm.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_zw0VpdzqxPbqxRi0c3WUhQ_tG2zmFlg';
+    // ============================================================
+
+    console.log('🔍 检查配置:');
+    console.log('📡 URL:', SUPABASE_URL);
+    console.log('🔑 KEY:', SUPABASE_KEY ? SUPABASE_KEY.substring(0, 20) + '...' : '❌ 未设置');
+
+    // ============================================================
+    // 初始化 Supabase 客户端（使用不同的变量名避免冲突）
+    // ============================================================
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ============================================================
+    // DATA LAYER - Cloud Sync Version
+    // ============================================================
+    const DB = {
+        async getUsers() {
+            console.log('📥 正在获取用户列表...');
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .order('username');
+            if (error) {
+                console.error('❌ 获取用户失败:', error);
+                throw error;
+            }
+            console.log('✅ 获取用户成功，共', data.length, '条');
+            return data;
+        },
+
+        async setUsers(users) {
+            console.log('📤 正在保存用户列表...');
+            await supabaseClient.from('users').delete().neq('id', '');
+            if (users.length > 0) {
+                const { error } = await supabaseClient.from('users').insert(users);
+                if (error) throw error;
+            }
+            console.log('✅ 用户列表保存成功');
+        },
+
+        async getQuestions() {
+            const { data, error } = await supabaseClient
+                .from('questions')
+                .select('*')
+                .order('createtime', { ascending: false });
+            if (error) throw error;
+            return data;
+        },
+
+        async setQuestions(questions) {
+            await supabaseClient.from('questions').delete().neq('id', '');
+            if (questions.length > 0) {
+                const { error } = await supabaseClient.from('questions').insert(questions);
+                if (error) throw error;
+            }
+        },
+
+        getCurrentUser() {
+            const data = JSON.parse(sessionStorage.getItem('ee_current_user'));
+            return data || null;
+        },
+        setCurrentUser(user) {
+            sessionStorage.setItem('ee_current_user', JSON.stringify(user));
+        },
+        clearCurrentUser() {
+            sessionStorage.removeItem('ee_current_user');
+        }
+    };
+
+    // ============================================================
+    // INIT CLOUD
+    // ============================================================
+    async function initCloud() {
+        try {
+            console.log('🚀 正在连接云数据库...');
+            const users = await DB.getUsers();
+            console.log('✅ 云数据库连接成功，用户数：', users.length);
+
+            if (users.length === 0) {
+                console.log('📝 初始化默认用户...');
+                await DB.setUsers([
+                    { id: 'u1', username: 'admin', password: '123456', name: '系统管理员', role: 'admin', degree: '',
+                        unit: '', qq: '', phone: '', studentId: '', class: '', status: 'approved', reject_reason: ''  },
+                    { id: 'u2', username: 'teacher', password: '123456', name: '张老师', role: 'teacher',
+                        degree: '博士', unit: 'XX大学', qq: '12345678', phone: '13800000000', studentId: '',
+                        class: '' },
+                    { id: 'u3', username: 'student', password: '123456', name: '李同学', role: 'student',
+                        degree: '', unit: '', qq: '', phone: '', studentId: '2024001', class: '电子工程1班' }
+                ]);
+                console.log('✅ 默认用户已创建');
+            }
+            return true;
+        } catch (e) {
+            console.error('❌ 云数据库连接失败：', e);
+            alert('⚠️ 无法连接云数据库，请检查网络和配置\n\n错误信息：' + e.message);
+            return false;
+        }
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+    function formatDate(ts) {
+        const d = new Date(ts);
+        return d.toLocaleString('zh-CN', { hour12: false });
+    }
+
+    function typeLabel(type) {
+        const map = { choice: '选择题', fill: '填空题', calculate: '计算题', design: '设计题' };
+        return map[type] || type;
+    }
+
+    function statusLabel(status) {
+        const map = { pending: '待审核', approved: '已通过', rejected: '已拒绝' };
+        return map[status] || status;
+    }
+
+    function statusClass(status) {
+        const map = { pending: 'pending', approved: 'approved', rejected: 'rejected' };
+        return map[status] || '';
+    }
+
+    function roleLabel(role) {
+        const map = { admin: '管理员', teacher: '老师', student: '学生' };
+        return map[role] || role;
+    }
+
+    function roleBadgeClass(role) {
+        return role === 'admin' ? 'admin' : role === 'teacher' ? 'teacher' : 'student';
+    }
+
+    function toast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.textContent = message;
+        container.appendChild(el);
+        setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(40px)';
+            setTimeout(() => el.remove(), 300);
+        }, 3000);
+    }
+
+// 答案可见性切换
+// ============================================================
+window.answerVisibility = {}; // 确保这行在前面已定义，如果没有则添加
+
+function toggleAnswer(qId) {
+    window.answerVisibility[qId] = !window.answerVisibility[qId];
+    // 刷新当前页面（根据当前所在页面调用对应的刷新函数）
+    refreshCurrentPage(); // 或者直接调用 refreshBrowse() / refreshMy()
+}
+
+function refreshCurrentPage() {
+    if (currentPage === 'browse') refreshBrowse();
+    else if (currentPage === 'my') refreshMy();
+    else if (currentPage === 'review') refreshReview();
+    else if (currentPage === 'stats') refreshStats();
+    else if (currentPage === 'users') refreshUsers();
+    else if (currentPage === 'profile') refreshProfile();
+}
+    // ============================================================
+    // AUTH
+    // ============================================================
+    function getCurrentUser() {
+        return DB.getCurrentUser();
+    }
+
+    function isTeacher() {
+        const u = getCurrentUser();
+        return u && u.role === 'teacher';
+    }
+
+    function isStudent() {
+        const u = getCurrentUser();
+        return u && u.role === 'student';
+    }
+
+    function isAdmin() {
+        const u = getCurrentUser();
+        return u && u.role === 'admin';
+    }
+
+    async function login(username, password) {
+    console.log('🔑 尝试登录:', username);
+    try {
+        const users = await DB.getUsers();
+        const user = users.find(u => u.username === username && u.password === password);
+        if (!user) {
+            console.log('❌ 用户不存在或密码错误');
+            return { success: false, message: '用户名或密码错误' };
+        }
+        // 检查审核状态
+        if (user.status === 'pending') {
+            return { success: false, message: '账号待审核，请联系管理员' };
+        }
+        if (user.status === 'rejected') {
+            return { success: false, message: '账号已被拒绝，原因：' + (user.reject_reason || '无') };
+        }
+        console.log('✅ 登录成功:', user.name);
+        DB.setCurrentUser(user);
+        return { success: true, user };
+    } catch (e) {
+        console.error('❌ 登录过程中出错:', e);
+        return { success: false, message: '登录失败：' + e.message };
+    }
+}
+
+    async function register(name, username, password, role, studentId, cls) {
+    try {
+        const users = await DB.getUsers();
+        if (users.find(u => u.username === username)) {
+            return { success: false, message: '用户名已存在' };
+        }
+        if (password.length < 6) {
+            return { success: false, message: '密码至少6位' };
+        }
+        if (role === 'student') {
+            if (!studentId || !cls) {
+                return { success: false, message: '学生注册需填写学号和专业班级' };
+            }
+        }
+        const newUser = {
+            id: uid(),
+            username,
+            password,
+            name,
+            role,
+            degree: '',
+            unit: '',
+            qq: '',
+            phone: '',
+            studentid: studentId || '',
+            class: cls || '',
+            status: 'pending',        // 新增：默认待审核
+            reject_reason: ''         // 新增
+        };
+        users.push(newUser);
+        await DB.setUsers(users);
+        return { success: true, user: newUser };
+    } catch (e) {
+        console.error('❌ 注册失败:', e);
+        return { success: false, message: '注册失败：' + e.message };
+    }
+}
+
+    function logout() {
+        DB.clearCurrentUser();
+        showAuth();
+    }
+
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
+    let currentPage = 'browse';
+
+    function navigateTo(page) {
+        currentPage = page;
+        document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+        const target = document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1));
+        if (target) target.classList.remove('hidden');
+
+        document.querySelectorAll('.sidebar .nav a').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sidebar .nav a').forEach(el => {
+            if (el.dataset.page === page) el.classList.add('active');
+        });
+
+        if (page === 'browse') refreshBrowse();
+        else if (page === 'my') refreshMy();
+        else if (page === 'review') refreshReview();
+        else if (page === 'stats') refreshStats();
+        else if (page === 'users') refreshUsers();
+        else if (page === 'profile') refreshProfile();
+
+        updateReviewBadge();
+    }
+
+    // ============================================================
+    // SHOW / HIDE AUTH & MAIN
+    // ============================================================
+    function showAuth() {
+        document.getElementById('authContainer').style.display = 'flex';
+        document.getElementById('mainContainer').classList.add('hidden');
+    }
+
+    function showMain() {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('mainContainer').classList.remove('hidden');
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('sidebarUserName').textContent = user.name;
+            const roleMap = { admin: '🔑 管理员', teacher: '👨‍🏫 老师', student: '🧑‍🎓 学生' };
+            document.getElementById('sidebarUserRole').textContent = roleMap[user.role] || user.role;
+            const extra = document.getElementById('sidebarUserExtra');
+            if (user.role === 'student') {
+                extra.textContent = `学号: ${user.studentid || '未设置'}  班级: ${user.class || '未设置'}`;
+            } else {
+                extra.textContent = '';
+            }
+        }
+        updateReviewBadge();
+        navigateTo('browse');
+    }
+
+    // ============================================================
+    // 刷新函数
+    // ============================================================
+    async function refreshBrowse() {
+    const container = document.getElementById('browseList');
+    try {
+        const qs = await DB.getQuestions();
+        const user = getCurrentUser();
+        let filtered = qs;
+        if (user && user.role === 'student') {
+            filtered = qs.filter(q => q.status === 'approved' || q.authorid === user.id);
+        }
+        // 过滤条件
+        const type = document.getElementById('filterType').value;
+        const status = document.getElementById('filterStatus').value;
+        const search = document.getElementById('filterSearch').value.toLowerCase();
+        if (type !== 'all') filtered = filtered.filter(q => q.type === type);
+        if (status !== 'all') filtered = filtered.filter(q => q.status === status);
+        if (search) {
+            filtered = filtered.filter(q =>
+                q.title.toLowerCase().includes(search) ||
+                q.content.toLowerCase().includes(search)
+            );
+        }
+        filtered.sort((a, b) => (b.createtime || 0) - (a.createtime || 0));
+
+        if (!filtered.length) {
+            container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><h4>暂无题目</h4><p>点击「添加题目」创建新题目</p></div>`;
+            return;
+        }
+
+        // 生成卡片（包含答案切换按钮）
+        let html = '';
+        filtered.forEach(q => {
+            // 选项
+            let optionsHtml = '';
+            if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
+                optionsHtml = `<ul class="q-options">${q.options.map(o => `<li>${o}</li>`).join('')}</ul>`;
+            }
+
+            // 答案（默认隐藏）
+            const isVisible = window.answerVisibility[q.id] || false;
+            let answerContent = `<div class="q-answer-content ${isVisible ? 'visible' : ''}">`;
+            answerContent += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
+            if (q.answerimage && q.answerimage.startsWith('data:image')) {
+                answerContent += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
+            }
+            answerContent += `</div>`;
+
+            let answerHtml = `
+                <div class="q-answer-wrapper">
+                    <button class="q-answer-toggle" onclick="toggleAnswer('${q.id}')">
+                        ${isVisible ? '🙈 隐藏答案' : '👁️ 查看答案'}
+                    </button>
+                    ${answerContent}
+                </div>
+            `;
+
+            // 电路图
+            let imageHtml = '';
+            if (q.image && q.image.startsWith('data:image')) {
+                imageHtml = `<div class="q-image"><img src="${q.image}" alt="电路图"></div>`;
+            }
+
+            // 状态标签
+            let statusHtml = '';
+            if (q.status) {
+                const cls = q.status === 'approved' ? 'approved' : q.status === 'pending' ? 'pending' : 'rejected';
+                const label = q.status === 'approved' ? '已通过' : q.status === 'pending' ? '待审核' : '已拒绝';
+                statusHtml = `<span class="q-status ${cls}">${label}</span>`;
+            }
+
+            html += `
+                <div class="question-card">
+                    <div class="q-header">
+                        <span class="q-type">${typeLabel(q.type)}</span>
+                        ${statusHtml}
+                    </div>
+                    <div class="q-title">${q.title || '（无标题）'}</div>
+                    <div class="q-content">${q.content || '（无内容）'}</div>
+                    ${optionsHtml}
+                    ${answerHtml}
+                    ${imageHtml}
+                    <div class="q-meta">
+                        <span>👤 ${q.authorname || '未知'} (${q.authorrole || '学生'})</span>
+                        <span>📅 ${q.createtime ? formatDate(q.createtime) : '未知时间'}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('刷新题目失败:', e);
+        container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
+    }
+}
+
+    async function refreshMy() {
+    const container = document.getElementById('myList');
+    const user = getCurrentUser();
+    if (!user) return;
+    try {
+        const qs = await DB.getQuestions();
+        const filtered = qs.filter(q => q.authorid === user.id);
+        // 应用类型和状态筛选
+        const type = document.getElementById('myFilterType').value;
+        const status = document.getElementById('myFilterStatus').value;
+        let result = filtered;
+        if (type !== 'all') result = result.filter(q => q.type === type);
+        if (status !== 'all') result = result.filter(q => q.status === status);
+        result.sort((a, b) => (b.createtime || 0) - (a.createtime || 0));
+
+        if (!result.length) {
+            container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><h4>暂无题目</h4><p>您还没有创建任何题目</p></div>`;
+            return;
+        }
+
+        let html = '';
+        result.forEach(q => {
+            // 选项
+            let optionsHtml = '';
+            if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
+                optionsHtml = `<ul class="q-options">${q.options.map(o => `<li>${o}</li>`).join('')}</ul>`;
+            }
+
+            // 答案（默认隐藏）
+            const isVisible = window.answerVisibility[q.id] || false;
+            let answerContent = `<div class="q-answer-content ${isVisible ? 'visible' : ''}">`;
+            answerContent += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
+            if (q.answerimage && q.answerimage.startsWith('data:image')) {
+                answerContent += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
+            }
+            answerContent += `</div>`;
+
+            let answerHtml = `
+                <div class="q-answer-wrapper">
+                    <button class="q-answer-toggle" onclick="toggleAnswer('${q.id}')">
+                        ${isVisible ? '🙈 隐藏答案' : '👁️ 查看答案'}
+                    </button>
+                    ${answerContent}
+                </div>
+            `;
+
+            let imageHtml = '';
+            if (q.image && q.image.startsWith('data:image')) {
+                imageHtml = `<div class="q-image"><img src="${q.image}" alt="电路图"></div>`;
+            }
+
+            let statusHtml = '';
+            if (q.status) {
+                const cls = q.status === 'approved' ? 'approved' : q.status === 'pending' ? 'pending' : 'rejected';
+                const label = q.status === 'approved' ? '已通过' : q.status === 'pending' ? '待审核' : '已拒绝';
+                statusHtml = `<span class="q-status ${cls}">${label}</span>`;
+            }
+
+            html += `
+                <div class="question-card">
+                    <div class="q-header">
+                        <span class="q-type">${typeLabel(q.type)}</span>
+                        ${statusHtml}
+                    </div>
+                    <div class="q-title">${q.title || '（无标题）'}</div>
+                    <div class="q-content">${q.content || '（无内容）'}</div>
+                    ${optionsHtml}
+                    ${answerHtml}
+                    ${imageHtml}
+                    <div class="q-meta">
+                        <span>📅 ${q.createtime ? formatDate(q.createtime) : '未知时间'}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('刷新我的题目失败:', e);
+        container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
+    }
+}
+
+
+
+
+// ============================================================
+// 新增：密码修改函数（直接更新数据库单条记录）
+// ============================================================
+async function changePassword(userId, oldPassword, newPassword) {
+    try {
+        // 1. 验证旧密码
+        const users = await DB.getUsers();
+        const user = users.find(u => u.id === userId);
+        if (!user) {
+            return { success: false, message: '用户不存在' };
+        }
+        if (user.password !== oldPassword) {
+            return { success: false, message: '当前密码错误' };
+        }
+        if (newPassword.length < 6) {
+            return { success: false, message: '新密码至少6位' };
+        }
+
+        // 2. 直接更新数据库（避免全量覆盖导致失败）
+        const { error } = await supabaseClient
+            .from('users')
+            .update({ password: newPassword })
+            .eq('id', userId);
+
+        if (error) {
+            console.error('更新密码失败:', error);
+            return { success: false, message: '更新失败：' + error.message };
+        }
+
+        // 3. 更新本地缓存的当前用户（避免立即登出）
+        const current = DB.getCurrentUser();
+        if (current && current.id === userId) {
+            current.password = newPassword;
+            DB.setCurrentUser(current);
+        }
+
+        console.log('✅ 密码修改成功');
+        return { success: true };
+    } catch (e) {
+        console.error('修改密码异常:', e);
+        return { success: false, message: '修改失败：' + e.message };
+    }
+}
+
+
+
+    async function refreshReview() {
+    const container = document.getElementById('reviewList');
+    if (!(isTeacher() || isAdmin())) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🚫</div><h4>无访问权限</h4></div>';
+        return;
+    }
+    try {
+        const qs = await DB.getQuestions();
+        const pending = qs.filter(q => q.status === 'pending');
+        
+        if (pending.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><h4>暂无待审核题目</h4><p>所有题目都已审核</p></div>`;
+            return;
+        }
+
+        // 直接生成 HTML（不依赖 renderQuestionList）
+        let html = '';
+        pending.forEach(q => {
+            // 安全处理选项
+            let optionsHtml = '';
+            if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
+                optionsHtml = `<ul class="q-options">${q.options.map(o => `<li>${o}</li>`).join('')}</ul>`;
+            }
+
+            // 答案（默认展开，方便审阅）
+            let answerHtml = `<div class="q-answer-content" style="display:block;padding:10px 14px;background:#f0f7ff;border-radius:6px;margin-top:8px;">`;
+            answerHtml += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
+            if (q.answerimage && q.answerimage.startsWith('data:image')) {
+                answerHtml += `<div class="answer-image" style="margin-top:8px;"><img src="${q.answerimage}" alt="答案图片" style="max-width:100%;max-height:200px;"></div>`;
+            }
+            answerHtml += `</div>`;
+
+            // 电路图
+            let imageHtml = '';
+            if (q.image && q.image.startsWith('data:image')) {
+                imageHtml = `<div class="q-image" style="margin-top:12px;"><img src="${q.image}" alt="电路图" style="max-width:100%;max-height:250px;"></div>`;
+            }
+
+            html += `
+                <div class="question-card" style="border-left-color: var(--warning);">
+                    <div class="q-header">
+                        <span class="q-type">${typeLabel(q.type)}</span>
+                        <span class="q-status pending">待审核</span>
+                    </div>
+                    <div class="q-title">${q.title || '（无标题）'}</div>
+                    <div class="q-content">${q.content || '（无内容）'}</div>
+                    ${optionsHtml}
+                    ${answerHtml}
+                    ${imageHtml}
+                    <div class="q-meta">
+                        <span>👤 ${q.authorName || '未知'} (${q.authorrole || '学生'})</span>
+                        <span>📅 ${q.createtime ? formatDate(q.createtime) : '未知时间'}</span>
+                    </div>
+                    <div class="q-actions">
+                        <button class="btn btn-success btn-sm" onclick="handleReview('${q.id}','approved')">✅ 通过</button>
+                        <button class="btn btn-danger btn-sm" onclick="handleReview('${q.id}','rejected')">❌ 拒绝</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // 更新待审核数量徽章
+        await updateReviewBadge();
+
+    } catch (e) {
+        console.error('审核页面加载失败:', e);
+        container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p><p style="font-size:12px;color:var(--gray);margin-top:8px;">请检查控制台详细信息</p></div>`;
+    }
+}
+
+
+
+    async function refreshStats() {
+    const container = document.getElementById('statsContainer');
+    if (!(isTeacher() || isAdmin())) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🚫</div><h4>无访问权限</h4></div>';
+        return;
+    }
+    try {
+        // 1. 获取所有用户和题目
+        const users = await DB.getUsers();
+        const questions = await DB.getQuestions();
+        
+        console.log('📊 统计调试信息:');
+        console.log('  用户总数:', users.length);
+        console.log('  题目总数:', questions.length);
+        console.log('  前3条题目:', questions.slice(0, 3));
+        
+        // 2. 筛选出学生
+        const students = users.filter(u => u.role === 'student');
+        console.log('  学生数量:', students.length);
+        
+        if (students.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">👤</div><h4>暂无学生</h4><p>等待学生注册</p></div>';
+            return;
+        }
+
+        // 3. 构建统计数据
+        const stats = students.map(student => {
+            // 使用 authorid 匹配（全小写，与数据库一致）
+            const myQs = questions.filter(q => q.authorid === student.id);
+            const choice = myQs.filter(q => q.type === 'choice').length;
+            const fill = myQs.filter(q => q.type === 'fill').length;
+            const calculate = myQs.filter(q => q.type === 'calculate').length;
+            const design = myQs.filter(q => q.type === 'design').length;
+            const total = myQs.length;
+            const pending = myQs.filter(q => q.status === 'pending').length;
+            
+            console.log(`  ${student.name}: 总题数 ${total}, 待审核 ${pending}`);
+            
+            return {
+                ...student,
+                choice,
+                fill,
+                calculate,
+                design,
+                total,
+                pending
+            };
+        });
+
+        // 4. 渲染表格
+        let html = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>学号</th>
+                        <th>班级</th>
+                        <th class="num">选择题</th>
+                        <th class="num">填空题</th>
+                        <th class="num">计算题</th>
+                        <th class="num">设计题</th>
+                        <th class="num">总题数</th>
+                        <th class="num">待审核</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        stats.forEach(s => {
+            html += `
+                <tr>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.studentid || '-'}</td>
+                    <td>${s.class || '-'}</td>
+                    <td class="num">${s.choice}</td>
+                    <td class="num">${s.fill}</td>
+                    <td class="num">${s.calculate}</td>
+                    <td class="num">${s.design}</td>
+                    <td class="num total">${s.total}</td>
+                    <td class="num" style="color:${s.pending > 0 ? 'var(--warning)' : 'var(--success)'}">${s.pending}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                </tbody>
+            </table>
+            <p style="margin-top:16px;font-size:14px;color:var(--gray);">💡 总题数 = 各题型数量之和；待审核指该学生提交的未审核题目数。</p>
+        `;
+        container.innerHTML = html;
+        
+    } catch (e) {
+        console.error('❌ 统计加载失败:', e);
+        container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
+    }
+}
+
+// ============================================================
+// 用户审核函数
+// ============================================================
+async function approveUser(userId) {
+    if (!isAdmin()) {
+        toast('无权限操作', 'error');
+        return;
+    }
+    if (!confirm('确定要通过该用户的审核吗？')) return;
+    
+    const { error } = await supabaseClient
+        .from('users')
+        .update({ status: 'approved' })
+        .eq('id', userId);
+    
+    if (error) {
+        console.error('审核失败:', error);
+        toast('审核失败：' + error.message, 'error');
+    } else {
+        toast('✅ 用户已审核通过', 'success');
+        refreshUsers();
+    }
+}
+
+async function rejectUser(userId) {
+    if (!isAdmin()) {
+        toast('无权限操作', 'error');
+        return;
+    }
+    const reason = prompt('请输入拒绝原因（可选）：');
+    if (reason === null) return; // 取消
+    
+    const { error } = await supabaseClient
+        .from('users')
+        .update({ status: 'rejected', reject_reason: reason || '' })
+        .eq('id', userId);
+    
+    if (error) {
+        console.error('拒绝失败:', error);
+        toast('拒绝失败：' + error.message, 'error');
+    } else {
+        toast('❌ 用户已拒绝', 'warning');
+        refreshUsers();
+    }
+}
+
+
+    async function refreshUsers() {
+    const container = document.getElementById('usersContainer');
+    if (!isAdmin()) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🚫</div><h4>无访问权限</h4></div>';
+        return;
+    }
+    try {
+        const users = await DB.getUsers();
+        const currentUser = getCurrentUser();
+        if (!users.length) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">👤</div><h4>暂无用户</h4></div>';
+            return;
+        }
+
+        let html = `
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>姓名</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>学号</th>
+                        <th>班级</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        users.forEach(u => {
+            const isSelf = u.id === currentUser.id;
+            // 状态显示
+            let statusText = '';
+            let statusClass = '';
+            if (u.status === 'pending') {
+                statusText = '待审核';
+                statusClass = 'pending';
+            } else if (u.status === 'approved') {
+                statusText = '已通过';
+                statusClass = 'approved';
+            } else if (u.status === 'rejected') {
+                statusText = '已拒绝';
+                statusClass = 'rejected';
+            } else {
+                statusText = u.status || '未知';
+            }
+
+            // 操作按钮
+            let actions = '';
+            if (isSelf) {
+                actions = '<span style="color:var(--gray);font-size:12px;">（本人）</span>';
+            } else {
+                // 如果是待审核状态，显示审核按钮；否则显示删除按钮
+                if (u.status === 'pending') {
+                    actions = `
+                        <button class="btn btn-success btn-sm" onclick="approveUser('${u.id}')">通过</button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectUser('${u.id}')">拒绝</button>
+                    `;
+                } else {
+                    actions = `<button class="btn btn-danger btn-sm delete-btn" onclick="deleteUser('${u.id}')">删除</button>`;
+                }
+            }
+
+            html += `
+                <tr>
+                    <td>${u.username}</td>
+                    <td><strong>${u.name}</strong></td>
+                    <td><span class="role-badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
+                    <td><span class="q-status ${statusClass}">${statusText}</span></td>
+                    <td>${u.studentid || '-'}</td>
+                    <td>${u.class || '-'}</td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
+    }
+}
+
+    // ============================================================
+// 刷新个人信息页面
+// ============================================================
+function refreshProfile() {
+    const user = getCurrentUser();
+    if (!user) return;
+    document.getElementById('profileName').value = user.name || '';
+    document.getElementById('profileDegree').value = user.degree || '';
+    document.getElementById('profileUnit').value = user.unit || '';
+    document.getElementById('profileQQ').value = user.qq || '';
+    document.getElementById('profilePhone').value = user.phone || '';
+    document.getElementById('profileMsg').textContent = '';
+
+    // 根据角色显示/隐藏字段
+    const isTeacherUser = user.role === 'teacher';
+    const isAdminUser = user.role === 'admin';
+    const showTeacherFields = (isTeacherUser || isAdminUser);
+    document.getElementById('profileDegreeGroup').style.display = showTeacherFields ? 'block' : 'none';
+    document.getElementById('profileUnitGroup').style.display = showTeacherFields ? 'block' : 'none';
+    document.getElementById('profileQQGroup').style.display = showTeacherFields ? 'block' : 'none';
+    document.getElementById('profilePhoneGroup').style.display = showTeacherFields ? 'block' : 'none';
+
+    if (user.role === 'student') {
+        document.getElementById('profileStudentIdGroup').style.display = 'block';
+        document.getElementById('profileClassGroup').style.display = 'block';
+        document.getElementById('profileStudentIdDisplay').textContent = user.studentid || '未设置';
+        document.getElementById('profileClassDisplay').textContent = user.class || '未设置';
+    } else {
+        document.getElementById('profileStudentIdGroup').style.display = 'none';
+        document.getElementById('profileClassGroup').style.display = 'none';
+    }
+}
+
+// ============================================================
+// 更新用户个人信息（直接更新单条记录）
+// ============================================================
+async function updateUserProfile(userId, data) {
+    try {
+        // 构建更新对象（只更新提供的字段）
+        const updateData = {};
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.degree !== undefined) updateData.degree = data.degree || '';
+        if (data.unit !== undefined) updateData.unit = data.unit || '';
+        if (data.qq !== undefined) updateData.qq = data.qq || '';
+        if (data.phone !== undefined) updateData.phone = data.phone || '';
+
+        // 直接更新数据库中的该用户记录
+        const { error } = await supabaseClient
+            .from('users')
+            .update(updateData)
+            .eq('id', userId);
+
+        if (error) {
+            console.error('更新个人信息失败:', error);
+            return { success: false, message: '更新失败：' + error.message };
+        }
+
+        // 更新本地缓存的当前用户
+        const current = DB.getCurrentUser();
+        if (current && current.id === userId) {
+            // 只更新提供的字段
+            if (data.name !== undefined) current.name = data.name;
+            if (data.degree !== undefined) current.degree = data.degree || '';
+            if (data.unit !== undefined) current.unit = data.unit || '';
+            if (data.qq !== undefined) current.qq = data.qq || '';
+            if (data.phone !== undefined) current.phone = data.phone || '';
+            DB.setCurrentUser(current);
+            // 更新侧边栏显示
+            document.getElementById('sidebarUserName').textContent = current.name;
+        }
+
+        console.log('✅ 个人信息更新成功');
+        return { success: true };
+
+    } catch (e) {
+        console.error('更新个人信息异常:', e);
+        return { success: false, message: '更新失败：' + e.message };
+    }
+}
+
+
+
+// ============================================================
+// 删除用户（管理员专用）
+// ============================================================
+async function deleteUser(userId) {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !isAdmin()) {
+        toast('无权限操作', 'error');
+        return;
+    }
+    if (currentUser.id === userId) {
+        toast('不能删除自己', 'warning');
+        return;
+    }
+    if (!confirm('确定要删除该用户吗？此操作将同时删除该用户创建的所有题目，且不可恢复！')) {
+        return;
+    }
+
+    try {
+        // 1. 删除该用户的所有题目
+        const { error: qError } = await supabaseClient
+            .from('questions')
+            .delete()
+            .eq('authorid', userId);
+
+        if (qError) {
+            console.error('删除题目失败:', qError);
+            toast('删除题目失败：' + qError.message, 'error');
+            return;
+        }
+
+        // 2. 删除用户本身
+        const { error: uError } = await supabaseClient
+            .from('users')
+            .delete()
+            .eq('id', userId);
+
+        if (uError) {
+            console.error('删除用户失败:', uError);
+            toast('删除用户失败：' + uError.message, 'error');
+            return;
+        }
+
+        toast('✅ 用户及其题目已删除', 'success');
+        refreshUsers(); // 刷新用户列表
+        updateReviewBadge(); // 更新待审核徽章（可能影响题目数量）
+    } catch (e) {
+        console.error('删除异常:', e);
+        toast('删除失败：' + e.message, 'error');
+    }
+}
+
+    async function updateReviewBadge() {
+        const badge = document.getElementById('reviewBadge');
+        try {
+            const qs = await DB.getQuestions();
+            const count = qs.filter(q => q.status === 'pending').length;
+            badge.textContent = count;
+            const navReview = document.getElementById('navReview');
+            const navStats = document.getElementById('navStats');
+            const navUsers = document.getElementById('navUsers');
+            if (isAdmin()) {
+                navReview.classList.remove('hidden');
+                navStats.classList.remove('hidden');
+                navUsers.classList.remove('hidden');
+            } else if (isTeacher()) {
+                navReview.classList.remove('hidden');
+                navStats.classList.remove('hidden');
+                navUsers.classList.add('hidden');
+            } else {
+                navReview.classList.add('hidden');
+                navStats.classList.add('hidden');
+                navUsers.classList.add('hidden');
+            }
+        } catch (e) {
+            console.error('更新审核徽章失败:', e);
+        }
+    }
+
+    // ============================================================
+    // 审核处理
+    // ============================================================
+    window.handleReview = async function(id, status) {
+        let reason = '';
+        if (status === 'rejected') {
+            reason = prompt('请输入拒绝原因：') || '未通过审核';
+            if (reason === null) return;
+        }
+        try {
+            const qs = await DB.getQuestions();
+            const idx = qs.findIndex(q => q.id === id);
+            if (idx === -1) { toast('题目不存在', 'error'); return; }
+            qs[idx].status = status;
+            qs[idx].rejectreason = reason || '';
+            qs[idx].updatetime = Date.now();
+            await DB.setQuestions(qs);
+            toast(status === 'approved' ? '✅ 审核通过' : '❌ 已拒绝', status === 'approved' ? 'success' : 'error');
+            refreshAll();
+        } catch (e) {
+            toast('审核失败：' + e.message, 'error');
+        }
+    };
+
+    // ============================================================
+    // 添加题目表单
+    // ============================================================
+    document.getElementById('addForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const type = document.getElementById('addType').value;
+        const title = document.getElementById('addTitle').value.trim();
+        const content = document.getElementById('addContent').value.trim();
+        const optionsText = document.getElementById('addOptions').value;
+        const answer = document.getElementById('addAnswer').value.trim();
+        const msgEl = document.getElementById('addFormMsg');
+
+        if (!title || !content || !answer) {
+            msgEl.textContent = '请填写完整信息（标题、内容、答案为必填）';
+            return;
+        }
+        if (type === 'choice') {
+            const opts = optionsText.split('\n').filter(o => o.trim());
+            if (opts.length < 2) {
+                msgEl.textContent = '选择题至少需要2个选项';
+                return;
+            }
+        }
+
+        try {
+            const user = getCurrentUser();
+            if (!user) { toast('请先登录', 'error'); return; }
+            const qs = await DB.getQuestions();
+            const newQ = {
+                id: uid(),
+                type,
+                title,
+                content,
+                options: type === 'choice' ? optionsText.split('\n').filter(o => o.trim()) : [],
+                answer,
+                answerimage: '',
+                image: '',
+                authorid: user.id,
+                authorname: user.name,
+                authorrole: user.role,
+                status: user.role === 'teacher' || user.role === 'admin' ? 'approved' : 'pending',
+                createtime: Date.now(),
+                updatetime: Date.now(),
+                rejectreason: ''
+            };
+            qs.push(newQ);
+            await DB.setQuestions(qs);
+            toast('✅ 题目提交成功！' + (user.role === 'student' ? ' 等待老师审核。' : ''), 'success');
+            msgEl.textContent = '';
+            document.getElementById('addForm').reset();
+            navigateTo('browse');
+        } catch (e) {
+            msgEl.textContent = '提交失败：' + e.message;
+        }
+    });
+// ============================================================
+// 个人信息表单提交事件
+// ============================================================
+// ============================================================
+// 个人信息表单提交事件
+// ============================================================
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const user = getCurrentUser();
+    if (!user) {
+        toast('请先登录', 'error');
+        return;
+    }
+
+    // 获取表单数据
+    const name = document.getElementById('profileName').value.trim();
+    const degree = document.getElementById('profileDegree').value.trim();
+    const unit = document.getElementById('profileUnit').value.trim();
+    const qq = document.getElementById('profileQQ').value.trim();
+    const phone = document.getElementById('profilePhone').value.trim();
+    const msgEl = document.getElementById('profileMsg');
+
+    // 验证姓名
+    if (!name) {
+        msgEl.textContent = '姓名不能为空';
+        return;
+    }
+
+    // 密码修改（如果有填写）
+    const oldPwd = document.getElementById('profileOldPassword').value;
+    const newPwd = document.getElementById('profileNewPassword').value;
+    const confirmPwd = document.getElementById('profileConfirmPassword').value;
+
+    let passwordUpdateResult = null;
+    if (oldPwd || newPwd || confirmPwd) {
+        if (!oldPwd || !newPwd || !confirmPwd) {
+            msgEl.textContent = '修改密码请完整填写所有密码字段';
+            return;
+        }
+        if (newPwd !== confirmPwd) {
+            msgEl.textContent = '新密码和确认密码不一致';
+            return;
+        }
+        if (newPwd.length < 6) {
+            msgEl.textContent = '新密码至少6位';
+            return;
+        }
+        passwordUpdateResult = await changePassword(user.id, oldPwd, newPwd);
+        if (!passwordUpdateResult.success) {
+            msgEl.textContent = passwordUpdateResult.message;
+            return;
+        }
+    }
+
+    // 更新个人信息
+    const updateResult = await updateUserProfile(user.id, {
+        name,
+        degree,
+        unit,
+        qq,
+        phone
+    });
+
+    if (updateResult.success) {
+        let msg = '✅ 个人信息已更新';
+        if (passwordUpdateResult && passwordUpdateResult.success) {
+            msg += '，密码已修改';
+        }
+        toast(msg, 'success');
+        msgEl.textContent = '';
+        // 清空密码框
+        document.getElementById('profileOldPassword').value = '';
+        document.getElementById('profileNewPassword').value = '';
+        document.getElementById('profileConfirmPassword').value = '';
+        // 刷新侧边栏
+        const updated = DB.getCurrentUser();
+        if (updated) {
+            document.getElementById('sidebarUserName').textContent = updated.name;
+            updateSidebarExtra(updated);
+        }
+        // 刷新个人信息页面
+        refreshProfile();
+    } else {
+        msgEl.textContent = updateResult.message;
+        toast('❌ ' + updateResult.message, 'error');
+    }
+});
+    // ============================================================
+    // 登录和注册表单事件
+    // ============================================================
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('🔑 登录按钮被点击');
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const errorEl = document.getElementById('loginError');
+
+        if (!username || !password) {
+            errorEl.textContent = '请填写用户名和密码';
+            return;
+        }
+
+        console.log('📤 发送登录请求:', username);
+        const result = await login(username, password);
+        console.log('📥 登录结果:', result);
+
+        if (result.success) {
+            errorEl.textContent = '';
+            showMain();
+            toast(`👋 欢迎回来，${result.user.name}！`, 'success');
+        } else {
+            errorEl.textContent = result.message;
+        }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const name = document.getElementById('regName').value.trim();
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const role = document.getElementById('regRole').value;
+        const studentId = document.getElementById('regStudentId').value.trim();
+        const cls = document.getElementById('regClass').value.trim();
+        const errorEl = document.getElementById('registerError');
+
+        if (!name || !username || !password) {
+            errorEl.textContent = '请填写完整信息（姓名、用户名、密码）';
+            return;
+        }
+        const result = await register(name, username, password, role, studentId, cls);
+        if (result.success) {
+            toast('🎉 注册成功！请登录', 'success');
+            document.querySelector('.auth-tabs button[data-tab="login"]').click();
+            document.getElementById('loginUsername').value = username;
+            document.getElementById('loginPassword').value = '';
+            errorEl.textContent = '';
+        } else {
+            errorEl.textContent = result.message;
+        }
+    });
+
+    // ============================================================
+    // 其他事件绑定
+    // ============================================================
+    document.querySelectorAll('.auth-tabs button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.auth-tabs button').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const tab = this.dataset.tab;
+            document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('registerError').textContent = '';
+        });
+    });
+
+    document.getElementById('regRole').addEventListener('change', function() {
+        const isStudent = this.value === 'student';
+        document.getElementById('regStudentId').required = isStudent;
+        document.getElementById('regClass').required = isStudent;
+        document.getElementById('studentIdRequired').textContent = isStudent ? '*' : '（选填）';
+        document.getElementById('classRequired').textContent = isStudent ? '*' : '（选填）';
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        logout();
+        toast('已退出登录', 'warning');
+    });
+
+    document.querySelectorAll('.sidebar .nav a').forEach(el => {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            const page = this.dataset.page;
+            if (page === 'review' && !(isTeacher() || isAdmin())) {
+                toast('仅老师或管理员可访问审核管理', 'error');
+                return;
+            }
+            if (page === 'stats' && !(isTeacher() || isAdmin())) {
+                toast('仅老师或管理员可查看统计', 'error');
+                return;
+            }
+            if (page === 'users' && !isAdmin()) {
+                toast('仅管理员可访问用户管理', 'error');
+                return;
+            }
+            navigateTo(page);
+        });
+    });
+
+    // ============================================================
+    // 添加题目类型切换
+    // ============================================================
+    document.getElementById('addType').addEventListener('change', function() {
+        const type = this.value;
+        document.getElementById('addOptionsGroup').style.display = type === 'choice' ? 'block' : 'none';
+        document.getElementById('addAnswerImageGroup').style.display =
+            (type === 'calculate' || type === 'design') ? 'block' : 'none';
+    });
+
+    // 图片预览
+    document.getElementById('addAnswerImage').addEventListener('change', function(e) {
+        const preview = document.getElementById('addAnswerImagePreview');
+        const img = document.getElementById('addAnswerImagePreviewImg');
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                img.src = ev.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            preview.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('addImage').addEventListener('change', function(e) {
+        const preview = document.getElementById('addImagePreview');
+        const img = document.getElementById('addImagePreviewImg');
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                img.src = ev.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            preview.classList.add('hidden');
+        }
+    });
+
+    // ============================================================
+    // 刷新所有页面
+    // ============================================================
+    function refreshAll() {
+        if (currentPage === 'browse') refreshBrowse();
+        else if (currentPage === 'my') refreshMy();
+        else if (currentPage === 'review') refreshReview();
+        else if (currentPage === 'stats') refreshStats();
+        else if (currentPage === 'users') refreshUsers();
+        else if (currentPage === 'profile') refreshProfile();
+        updateReviewBadge();
+    }
+
+    // ============================================================
+    // 初始化
+    // ============================================================
+    async function init() {
+        console.log('🚀 初始化系统...');
+
+        // 检查 Supabase 配置
+        if (!SUPABASE_KEY || SUPABASE_KEY === '您的 anon public 或 publishable 密钥') {
+            alert('⚠️ 请先配置 Supabase 密钥！\n\n在代码中找到 SUPABASE_KEY 变量，替换为您的实际密钥。');
+            console.error('❌ SUPABASE_KEY 未配置');
+            return;
+        }
+
+        // 初始化云数据库
+        const cloudReady = await initCloud();
+        if (!cloudReady) {
+            console.warn('⚠️ 云数据库初始化失败，请检查配置');
+        }
+
+        // 检查当前用户
+        const user = getCurrentUser();
+        if (user) {
+            showMain();
+            toast('✅ 云同步已连接', 'success');
+        } else {
+            showAuth();
+        }
+
+        // 自动刷新
+        setInterval(refreshAll, 15000);
+        console.log('⚡ 电工电子题库系统已启动（云同步版）');
+        console.log('📌 管理员: admin / 123456');
+        console.log('📌 老师: teacher / 123456');
+        console.log('📌 学生: student / 123456');
+        console.log('✅ 数据存储在 Supabase 云端，支持多设备同步');
+    }
+
+    // 启动
+    init();
+</script>
+</body>
+</html>
