@@ -43,6 +43,111 @@
             margin: 0 10px;
 }
 
+/* ============================================================
+   移动端优化
+   ============================================================ */
+@media (max-width: 820px) {
+    /* 触控优化 */
+    .btn {
+        min-height: 40px;
+        padding: 10px 16px;
+    }
+    .btn-sm {
+        min-height: 34px;
+        padding: 6px 12px;
+    }
+    input, select, textarea {
+        min-height: 42px;
+        font-size: 16px;  /* 防止 iOS 缩放 */
+    }
+    /* 防止溢出 */
+    body {
+        overflow-x: hidden;
+    }
+    .question-card, .modal, .content {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+}
+
+@media (max-width: 480px) {
+    /* 题目卡片 */
+    .question-card {
+        padding: 14px 12px;
+    }
+    .question-card .q-title {
+        font-size: 15px;
+    }
+    .question-card .q-content {
+        font-size: 14px;
+    }
+    .question-card .q-answer-toggle {
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+    }
+    .question-card .q-actions {
+        flex-direction: column;
+    }
+    .question-card .q-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    /* 模态框 */
+    .modal .modal-actions {
+        flex-direction: column;
+    }
+    .modal .modal-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    /* 分页 */
+    .pagination button {
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+    .pagination .page-info {
+        font-size: 12px;
+        width: 100%;
+        text-align: center;
+        margin-top: 6px;
+    }
+}
+
+/* 表格卡片化 */
+@media (max-width: 600px) {
+    .stats-table, .user-table {
+        border: none;
+        box-shadow: none;
+    }
+    .stats-table thead, .user-table thead {
+        display: none;
+    }
+    .stats-table tr, .user-table tr {
+        display: block;
+        margin-bottom: 12px;
+        background: #fff;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: var(--shadow);
+    }
+    .stats-table td, .user-table td {
+        display: block;
+        padding: 6px 0;
+        border: none;
+        text-align: left;
+    }
+    .stats-table td::before, .user-table td::before {
+        content: attr(data-label) "：";
+        font-weight: 600;
+        color: var(--primary-dark);
+        margin-right: 6px;
+    }
+}
+
+
+
+
         /* ===== CSS Variables ===== */
         :root {
             --primary: #2c6b9e;
@@ -1709,6 +1814,11 @@
         }
     }
 
+// 上传限制配置
+// ============================================================
+const MAX_FILE_SIZE = 2 * 1024 * 1024;  // 2MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
     // ============================================================
     // HELPERS
     // ============================================================
@@ -2876,14 +2986,24 @@ async function deleteUser(userId) {
         // ============================================================
         // 图片上传：将文件上传到 Supabase Storage，返回 URL
         // ============================================================
-        async function uploadImage(file) {
+       async function uploadImage(file) {
     if (!file) return '';
     
-    // 生成安全文件名（只含字母数字和扩展名）
+    // 二次校验文件大小
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`图片大小不能超过 ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+    }
+    
+    // 二次校验文件类型
+    if (!file.type.startsWith('image/')) {
+        throw new Error('只能上传图片文件');
+    }
+    
+    // 生成安全文件名
     const ext = file.name.split('.').pop() || 'jpg';
     const fileName = `${uid()}.${ext}`;
     
-    console.log('📤 上传图片:', fileName);
+    console.log('📤 上传图片:', fileName, `(${(file.size / 1024).toFixed(1)}KB)`);
     
     const { data, error } = await supabaseClient.storage
         .from('question-images')
@@ -2897,12 +3017,10 @@ async function deleteUser(userId) {
         throw new Error('图片上传失败：' + error.message);
     }
     
-    // 获取公开访问 URL
     const { data: urlData } = supabaseClient.storage
         .from('question-images')
         .getPublicUrl(fileName);
     
-    console.log('✅ 图片上传成功，URL:', urlData.publicUrl);
     return urlData.publicUrl;
 }
 
@@ -3189,34 +3307,72 @@ document.getElementById('myFilterStatus').addEventListener('change', () => {
 
     // 图片预览
     document.getElementById('addAnswerImage').addEventListener('change', function(e) {
-        const preview = document.getElementById('addAnswerImagePreview');
-        const img = document.getElementById('addAnswerImagePreviewImg');
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                img.src = ev.target.result;
-                preview.classList.remove('hidden');
-            };
-            reader.readAsDataURL(this.files[0]);
-        } else {
+    const preview = document.getElementById('addAnswerImagePreview');
+    const img = document.getElementById('addAnswerImagePreviewImg');
+    
+    if (this.files && this.files[0]) {
+        const file = this.files[0];
+        
+        // 文件大小检查
+        if (file.size > MAX_FILE_SIZE) {
+            toast(`图片不能超过 ${MAX_FILE_SIZE / 1024 / 1024}MB，当前 ${(file.size / 1024 / 1024).toFixed(2)}MB`, 'error');
+            this.value = '';
             preview.classList.add('hidden');
+            return;
         }
-    });
+        
+        // 文件类型检查
+        if (!file.type.startsWith('image/')) {
+            toast('请选择图片文件（JPG/PNG/GIF）', 'error');
+            this.value = '';
+            preview.classList.add('hidden');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            img.src = ev.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('hidden');
+    }
+});
 
-    document.getElementById('addImage').addEventListener('change', function(e) {
-        const preview = document.getElementById('addImagePreview');
-        const img = document.getElementById('addImagePreviewImg');
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                img.src = ev.target.result;
-                preview.classList.remove('hidden');
-            };
-            reader.readAsDataURL(this.files[0]);
-        } else {
+   document.getElementById('addImage').addEventListener('change', function(e) {
+    const preview = document.getElementById('addImagePreview');
+    const img = document.getElementById('addImagePreviewImg');
+    
+    if (this.files && this.files[0]) {
+        const file = this.files[0];
+        
+        // ========== 文件大小检查 ==========
+        if (file.size > MAX_FILE_SIZE) {
+            toast(`图片不能超过 ${MAX_FILE_SIZE / 1024 / 1024}MB，当前 ${(file.size / 1024 / 1024).toFixed(2)}MB`, 'error');
+            this.value = '';  // 清空文件选择
             preview.classList.add('hidden');
+            return;
         }
-    });
+        
+        // ========== 文件类型检查 ==========
+        if (!file.type.startsWith('image/')) {
+            toast('请选择图片文件（JPG/PNG/GIF）', 'error');
+            this.value = '';
+            preview.classList.add('hidden');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            img.src = ev.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('hidden');
+    }
+});
 
     // ============================================================
     // 刷新所有页面
