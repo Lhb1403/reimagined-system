@@ -5,6 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>电工与电子技术 - 题库系统（云同步版）</title>
     <style>
+      /* 分页控件 */
+        .pagination {
+          display: flex;
+          justify-content: center;
+         align-items: center;
+         gap: 8px;
+         margin-top: 24px;
+         flex-wrap: wrap;
+}
+        .pagination button {
+           padding: 6px 14px;
+           border: 1px solid var(--border);
+           background: #fff;
+           border-radius: 6px;
+           cursor: pointer;
+           font-size: 14px;
+           transition: all 0.2s;
+}
+       .pagination button:hover:not(:disabled) {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+}
+       .pagination button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+}
+       .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+}
+       .pagination .page-info {
+            font-size: 14px;
+            color: var(--gray);
+            margin: 0 10px;
+}
+
         /* ===== CSS Variables ===== */
         :root {
             --primary: #2c6b9e;
@@ -1292,6 +1330,9 @@
                     <li id="navReview" class="hidden"><a data-page="review"><span class="icon">🔍</span> 审核管理 <span class="badge" id="reviewBadge">0</span></a></li>
                     <li id="navStats" class="hidden"><a data-page="stats"><span class="icon">📊</span> 学生统计</a></li>
                     <li id="navUsers" class="hidden"><a data-page="users"><span class="icon">👥</span> 用户管理</a></li>
+                    <li id="navExport" class="hidden">
+                         <a data-page="export"><span class="icon">📤</span> 数据导出</a>
+                    </li>
                     <li><a data-page="profile"><span class="icon">👤</span> 个人信息</a></li>
                 </ul>
                 <button class="logout-btn" id="logoutBtn">🚪 退出登录</button>
@@ -1331,6 +1372,10 @@
                     </div>
 
                     <div id="browseList" class="question-list"></div>
+                     <div id="browseList" class="question-list"></div>
+<!-- 分页控件 -->
+<div id="browsePagination" class="pagination"></div>
+
                 </div>
 
                 <!-- ===== PAGE: ADD ===== -->
@@ -1418,6 +1463,9 @@
                         </label>
                     </div>
                     <div id="myList" class="question-list"></div>
+           <div id="myList" class="question-list"></div>
+           <!-- 分页控件 -->
+           <div id="myPagination" class="pagination"></div>
                 </div>
 
                 <!-- ===== PAGE: REVIEW ===== -->
@@ -1450,6 +1498,32 @@
                         <!-- 由 JS 动态渲染 -->
                     </div>
                 </div>
+
+<!-- ===== PAGE: EXPORT ===== -->
+<div id="pageExport" class="page-content hidden">
+    <div class="content-header">
+        <h3>📤 数据导出</h3>
+        <span style="font-size:14px;color:var(--gray);">导出题库数据用于备份或分析</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; max-width:600px;">
+        <div style="background:#fff; padding:20px; border-radius:10px; box-shadow:var(--shadow);">
+            <h4>📚 题目数据</h4>
+            <p style="color:var(--gray); font-size:14px; margin:8px 0;">包含所有题目、答案、图片等完整信息。</p>
+            <button class="btn btn-primary" onclick="exportData('questions')">导出题目 (JSON)</button>
+        </div>
+        <div style="background:#fff; padding:20px; border-radius:10px; box-shadow:var(--shadow);">
+            <h4>👥 用户数据</h4>
+            <p style="color:var(--gray); font-size:14px; margin:8px 0;">包含所有用户信息（密码字段将保留哈希值，请妥善保管）。</p>
+            <button class="btn btn-primary" onclick="exportData('users')">导出用户 (JSON)</button>
+        </div>
+        <div style="background:#fff; padding:20px; border-radius:10px; box-shadow:var(--shadow);">
+            <h4>📦 全部数据</h4>
+            <p style="color:var(--gray); font-size:14px; margin:8px 0;">同时导出题目和用户数据。</p>
+            <button class="btn btn-primary" onclick="exportData('all')">导出全部 (JSON)</button>
+        </div>
+    </div>
+</div>
+
 
                 <!-- ===== PAGE: PROFILE ===== -->
                <!-- ===== PAGE: PROFILE ===== -->
@@ -1638,7 +1712,15 @@
     // ============================================================
     // HELPERS
     // ============================================================
-    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  
+      // 分页状态
+       let browsePage = 1;
+       let myPage = 1;
+       const PAGE_SIZE = 10;  // 每页显示10条
+
+
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
     function formatDate(ts) {
         const d = new Date(ts);
@@ -1682,6 +1764,48 @@
         }, 3000);
     }
 
+
+// ============================================================
+// 密码哈希函数（SHA-256 + 盐）
+// ============================================================
+async function hashPassword(password) {
+    // 加盐：固定盐值 + 密码，增强安全性（也可每个用户随机盐，但需存储盐）
+    const salt = 'ee_exam_2024_salt_';  // 可自定义
+    const encoder = new TextEncoder();
+    const data = encoder.encode(salt + password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function renderPagination(containerId, currentPage, totalPages, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    // 上一页
+    html += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="(${onPageChange})(${currentPage - 1})">上一页</button>`;
+
+    // 页码（最多显示5个）
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="${i === currentPage ? 'active' : ''}" onclick="(${onPageChange})(${i})">${i}</button>`;
+    }
+
+    // 下一页
+    html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="(${onPageChange})(${currentPage + 1})">下一页</button>`;
+
+    // 信息
+    html += `<span class="page-info">第 ${currentPage} / ${totalPages} 页，共 ${totalPages * PAGE_SIZE} 条</span>`;
+
+    container.innerHTML = html;
+}
+
 // 答案可见性切换
 // ============================================================
 window.answerVisibility = {}; // 确保这行在前面已定义，如果没有则添加
@@ -1699,6 +1823,59 @@ function refreshCurrentPage() {
     else if (currentPage === 'stats') refreshStats();
     else if (currentPage === 'users') refreshUsers();
     else if (currentPage === 'profile') refreshProfile();
+}
+
+// ============================================================
+// 数据导出（管理员专用）
+// ============================================================
+async function exportData(type) {
+    if (!isAdmin()) {
+        toast('仅管理员可导出数据', 'error');
+        return;
+    }
+
+    try {
+        toast('⏳ 正在准备数据...', 'info');
+        
+        const exportObj = {
+            exportTime: new Date().toISOString(),
+            version: '1.0',
+            type: type
+        };
+
+        if (type === 'questions' || type === 'all') {
+            exportObj.questions = await DB.getQuestions();
+        }
+        if (type === 'users' || type === 'all') {
+            exportObj.users = await DB.getUsers();
+        }
+
+        // 转换为 JSON 字符串
+        const jsonStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // 生成文件名
+        const date = new Date().toISOString().slice(0, 10);
+        let fileName = '';
+        if (type === 'questions') fileName = `questions_${date}.json`;
+        else if (type === 'users') fileName = `users_${date}.json`;
+        else fileName = `exam_data_${date}.json`;
+
+        // 触发下载
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast('✅ 导出成功！', 'success');
+    } catch (e) {
+        console.error('导出失败:', e);
+        toast('❌ 导出失败：' + e.message, 'error');
+    }
 }
     // ============================================================
     // AUTH
@@ -1726,11 +1903,42 @@ function refreshCurrentPage() {
     console.log('🔑 尝试登录:', username);
     try {
         const users = await DB.getUsers();
-        const user = users.find(u => u.username === username && u.password === password);
+        const user = users.find(u => u.username === username);
         if (!user) {
-            console.log('❌ 用户不存在或密码错误');
             return { success: false, message: '用户名或密码错误' };
         }
+
+        // 计算输入密码的哈希
+        const hashedInput = await hashPassword(password);
+        const storedPassword = user.password;
+
+        // 判断存储的是否为哈希（SHA-256 为 64 位十六进制）
+        const isHashed = /^[a-f0-9]{64}$/i.test(storedPassword);
+
+        let passwordMatch = false;
+        if (isHashed) {
+            // 已哈希，直接比较
+            passwordMatch = (storedPassword === hashedInput);
+        } else {
+            // 旧明文，直接比较，并自动升级为哈希
+            passwordMatch = (storedPassword === password);
+            if (passwordMatch) {
+                // 升级密码为哈希
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ password: hashedInput })
+                    .eq('id', user.id);
+                if (!error) {
+                    user.password = hashedInput; // 更新本地缓存
+                    console.log('🔄 已将明文密码升级为哈希');
+                }
+            }
+        }
+
+        if (!passwordMatch) {
+            return { success: false, message: '用户名或密码错误' };
+        }
+
         // 检查审核状态
         if (user.status === 'pending') {
             return { success: false, message: '账号待审核，请联系管理员' };
@@ -1738,6 +1946,7 @@ function refreshCurrentPage() {
         if (user.status === 'rejected') {
             return { success: false, message: '账号已被拒绝，原因：' + (user.reject_reason || '无') };
         }
+
         console.log('✅ 登录成功:', user.name);
         DB.setCurrentUser(user);
         return { success: true, user };
@@ -1761,10 +1970,14 @@ function refreshCurrentPage() {
                 return { success: false, message: '学生注册需填写学号和专业班级' };
             }
         }
+
+ // 密码哈希
+        const hashedPassword = await hashPassword(password);
+
         const newUser = {
             id: uid(),
             username,
-            password,
+          password: hashedPassword,   // 存储哈希值
             name,
             role,
             degree: '',
@@ -1811,6 +2024,7 @@ function refreshCurrentPage() {
         else if (page === 'review') refreshReview();
         else if (page === 'stats') refreshStats();
         else if (page === 'users') refreshUsers();
+        else if (page === 'export') { /* 导出页面无需刷新数据 */ }
         else if (page === 'profile') refreshProfile();
 
         updateReviewBadge();
@@ -1846,16 +2060,18 @@ function refreshCurrentPage() {
     // ============================================================
     // 刷新函数
     // ============================================================
-    async function refreshBrowse() {
+   async function refreshBrowse() {
     const container = document.getElementById('browseList');
+    const paginationContainer = document.getElementById('browsePagination');
     try {
+        // 1. 获取数据并过滤
         const qs = await DB.getQuestions();
         const user = getCurrentUser();
         let filtered = qs;
         if (user && user.role === 'student') {
             filtered = qs.filter(q => q.status === 'approved' || q.authorid === user.id);
         }
-        // 过滤条件
+        // 筛选条件
         const type = document.getElementById('filterType').value;
         const status = document.getElementById('filterStatus').value;
         const search = document.getElementById('filterSearch').value.toLowerCase();
@@ -1867,16 +2083,25 @@ function refreshCurrentPage() {
                 q.content.toLowerCase().includes(search)
             );
         }
+        // 排序
         filtered.sort((a, b) => (b.createtime || 0) - (a.createtime || 0));
 
-        if (!filtered.length) {
+        // 2. 分页逻辑
+        const total = filtered.length;
+        const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+        if (browsePage > totalPages) browsePage = totalPages;
+        const start = (browsePage - 1) * PAGE_SIZE;
+        const pageData = filtered.slice(start, start + PAGE_SIZE);
+
+        // 3. 渲染当前页数据
+        if (!pageData.length) {
             container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><h4>暂无题目</h4><p>点击「添加题目」创建新题目</p></div>`;
+            paginationContainer.innerHTML = '';
             return;
         }
 
-        // 生成卡片（包含答案切换按钮）
         let html = '';
-        filtered.forEach(q => {
+        pageData.forEach(q => {
             // 选项
             let optionsHtml = '';
             if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
@@ -1887,7 +2112,7 @@ function refreshCurrentPage() {
             const isVisible = window.answerVisibility[q.id] || false;
             let answerContent = `<div class="q-answer-content ${isVisible ? 'visible' : ''}">`;
             answerContent += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
-            if (q.answerimage && q.answerimage.startsWith('data:image')) {
+            if (q.answerimage && (q.answerimage.startsWith('http') || q.answerimage.startsWith('data:image'))) {
                 answerContent += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
             }
             answerContent += `</div>`;
@@ -1903,7 +2128,7 @@ function refreshCurrentPage() {
 
             // 电路图
             let imageHtml = '';
-            if (q.image && q.image.startsWith('data:image')) {
+            if (q.image && (q.image.startsWith('http') || q.image.startsWith('data:image'))) {
                 imageHtml = `<div class="q-image"><img src="${q.image}" alt="电路图"></div>`;
             }
 
@@ -1935,49 +2160,72 @@ function refreshCurrentPage() {
         });
 
         container.innerHTML = html;
+
+        // 4. 渲染分页控件
+        renderPagination('browsePagination', browsePage, totalPages, (page) => {
+            browsePage = page;
+            refreshBrowse();
+        });
+
     } catch (e) {
         console.error('刷新题目失败:', e);
         container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
+        paginationContainer.innerHTML = '';
     }
 }
 
-    async function refreshMy() {
+   async function refreshMy() {
     const container = document.getElementById('myList');
+    const paginationContainer = document.getElementById('myPagination');
     const user = getCurrentUser();
     if (!user) return;
+    
     try {
         const qs = await DB.getQuestions();
-        const filtered = qs.filter(q => q.authorid === user.id);
-        // 应用类型和状态筛选
+        // 1. 筛选当前用户的题目
+        let filtered = qs.filter(q => q.authorid === user.id);
+        
+        // 2. 应用筛选条件（题型、状态）
         const type = document.getElementById('myFilterType').value;
         const status = document.getElementById('myFilterStatus').value;
-        let result = filtered;
-        if (type !== 'all') result = result.filter(q => q.type === type);
-        if (status !== 'all') result = result.filter(q => q.status === status);
-        result.sort((a, b) => (b.createtime || 0) - (a.createtime || 0));
-
-        if (!result.length) {
+        if (type !== 'all') filtered = filtered.filter(q => q.type === type);
+        if (status !== 'all') filtered = filtered.filter(q => q.status === status);
+        
+        // 3. 排序
+        filtered.sort((a, b) => (b.createtime || 0) - (a.createtime || 0));
+        
+        // ========== 分页逻辑 ==========
+        const total = filtered.length;
+        const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+        // 如果当前页码超出总页数，修正为最后一页
+        if (myPage > totalPages) myPage = totalPages;
+        const start = (myPage - 1) * PAGE_SIZE;
+        const pageData = filtered.slice(start, start + PAGE_SIZE);
+        
+        // 4. 渲染当前页数据
+        if (!pageData.length) {
             container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><h4>暂无题目</h4><p>您还没有创建任何题目</p></div>`;
+            paginationContainer.innerHTML = '';
             return;
         }
-
+        
         let html = '';
-        result.forEach(q => {
+        pageData.forEach(q => {
             // 选项
             let optionsHtml = '';
             if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
                 optionsHtml = `<ul class="q-options">${q.options.map(o => `<li>${o}</li>`).join('')}</ul>`;
             }
-
+            
             // 答案（默认隐藏）
             const isVisible = window.answerVisibility[q.id] || false;
             let answerContent = `<div class="q-answer-content ${isVisible ? 'visible' : ''}">`;
             answerContent += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
-            if (q.answerimage && q.answerimage.startsWith('data:image')) {
+            if (q.answerimage && (q.answerimage.startsWith('http') || q.answerimage.startsWith('data:image'))) {
                 answerContent += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
             }
             answerContent += `</div>`;
-
+            
             let answerHtml = `
                 <div class="q-answer-wrapper">
                     <button class="q-answer-toggle" onclick="toggleAnswer('${q.id}')">
@@ -1986,19 +2234,21 @@ function refreshCurrentPage() {
                     ${answerContent}
                 </div>
             `;
-
+            
+            // 电路图
             let imageHtml = '';
-            if (q.image && q.image.startsWith('data:image')) {
+            if (q.image && (q.image.startsWith('http') || q.image.startsWith('data:image'))) {
                 imageHtml = `<div class="q-image"><img src="${q.image}" alt="电路图"></div>`;
             }
-
+            
+            // 状态标签
             let statusHtml = '';
             if (q.status) {
                 const cls = q.status === 'approved' ? 'approved' : q.status === 'pending' ? 'pending' : 'rejected';
                 const label = q.status === 'approved' ? '已通过' : q.status === 'pending' ? '待审核' : '已拒绝';
                 statusHtml = `<span class="q-status ${cls}">${label}</span>`;
             }
-
+            
             html += `
                 <div class="question-card">
                     <div class="q-header">
@@ -2016,11 +2266,18 @@ function refreshCurrentPage() {
                 </div>
             `;
         });
-
         container.innerHTML = html;
+        
+        // 5. 渲染分页控件
+        renderPagination('myPagination', myPage, totalPages, (page) => {
+            myPage = page;
+            refreshMy();
+        });
+        
     } catch (e) {
         console.error('刷新我的题目失败:', e);
         container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
+        paginationContainer.innerHTML = '';
     }
 }
 
@@ -2032,23 +2289,38 @@ function refreshCurrentPage() {
 // ============================================================
 async function changePassword(userId, oldPassword, newPassword) {
     try {
-        // 1. 验证旧密码
         const users = await DB.getUsers();
         const user = users.find(u => u.id === userId);
         if (!user) {
             return { success: false, message: '用户不存在' };
         }
-        if (user.password !== oldPassword) {
+
+        const hashedOld = await hashPassword(oldPassword);
+        const storedPassword = user.password;
+        const isHashed = /^[a-f0-9]{64}$/i.test(storedPassword);
+
+        // 验证旧密码
+        let oldMatch = false;
+        if (isHashed) {
+            oldMatch = (storedPassword === hashedOld);
+        } else {
+            oldMatch = (storedPassword === oldPassword);
+        }
+        if (!oldMatch) {
             return { success: false, message: '当前密码错误' };
         }
+
         if (newPassword.length < 6) {
             return { success: false, message: '新密码至少6位' };
         }
 
-        // 2. 直接更新数据库（避免全量覆盖导致失败）
+        // 新密码哈希
+        const hashedNew = await hashPassword(newPassword);
+
+        // 更新数据库
         const { error } = await supabaseClient
             .from('users')
-            .update({ password: newPassword })
+            .update({ password: hashedNew })
             .eq('id', userId);
 
         if (error) {
@@ -2056,10 +2328,10 @@ async function changePassword(userId, oldPassword, newPassword) {
             return { success: false, message: '更新失败：' + error.message };
         }
 
-        // 3. 更新本地缓存的当前用户（避免立即登出）
+        // 更新本地缓存
         const current = DB.getCurrentUser();
         if (current && current.id === userId) {
-            current.password = newPassword;
+            current.password = hashedNew;
             DB.setCurrentUser(current);
         }
 
@@ -2100,16 +2372,16 @@ async function changePassword(userId, oldPassword, newPassword) {
             // 答案（默认展开，方便审阅）
             let answerHtml = `<div class="q-answer-content" style="display:block;padding:10px 14px;background:#f0f7ff;border-radius:6px;margin-top:8px;">`;
             answerHtml += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
-            if (q.answerimage && q.answerimage.startsWith('data:image')) {
-                answerHtml += `<div class="answer-image" style="margin-top:8px;"><img src="${q.answerimage}" alt="答案图片" style="max-width:100%;max-height:200px;"></div>`;
-            }
+           if (q.answerimage && (q.answerimage.startsWith('http') || q.answerimage.startsWith('data:image'))) {
+    answerContent += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
+}
             answerHtml += `</div>`;
 
-            // 电路图
-            let imageHtml = '';
-            if (q.image && q.image.startsWith('data:image')) {
-                imageHtml = `<div class="q-image" style="margin-top:12px;"><img src="${q.image}" alt="电路图" style="max-width:100%;max-height:250px;"></div>`;
-            }
+           // 电路图（兼容 http URL 和 Base64）
+let imageHtml = '';
+if (q.image && (q.image.startsWith('http') || q.image.startsWith('data:image'))) {
+    imageHtml = `<div class="q-image"><img src="${q.image}" alt="电路图" style="max-width:100%;max-height:250px;"></div>`;
+}
 
             html += `
                 <div class="question-card" style="border-left-color: var(--warning);">
@@ -2528,6 +2800,18 @@ async function deleteUser(userId) {
                 navStats.classList.add('hidden');
                 navUsers.classList.add('hidden');
             }
+        const navExport = document.getElementById('navExport');
+        if (isAdmin()) {
+            navReview.classList.remove('hidden');
+            navStats.classList.remove('hidden');
+            navUsers.classList.remove('hidden');
+            navExport.classList.remove('hidden');
+        } else {
+            navReview.classList.add('hidden');
+            navStats.classList.add('hidden');
+            navUsers.classList.add('hidden');
+            navExport.classList.add('hidden');
+    }
         } catch (e) {
             console.error('更新审核徽章失败:', e);
         }
@@ -2560,58 +2844,124 @@ async function deleteUser(userId) {
     // ============================================================
     // 添加题目表单
     // ============================================================
-    document.getElementById('addForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const type = document.getElementById('addType').value;
-        const title = document.getElementById('addTitle').value.trim();
-        const content = document.getElementById('addContent').value.trim();
-        const optionsText = document.getElementById('addOptions').value;
-        const answer = document.getElementById('addAnswer').value.trim();
-        const msgEl = document.getElementById('addFormMsg');
+   document.getElementById('addForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const type = document.getElementById('addType').value;
+    const title = document.getElementById('addTitle').value.trim();
+    const content = document.getElementById('addContent').value.trim();
+    const optionsText = document.getElementById('addOptions').value;
+    const answer = document.getElementById('addAnswer').value.trim();
+    const msgEl = document.getElementById('addFormMsg');
 
-        if (!title || !content || !answer) {
-            msgEl.textContent = '请填写完整信息（标题、内容、答案为必填）';
+    if (!title || !content || !answer) {
+        msgEl.textContent = '请填写完整信息（标题、内容、答案为必填）';
+        return;
+    }
+    if (type === 'choice') {
+        const opts = optionsText.split('\n').filter(o => o.trim());
+        if (opts.length < 2) {
+            msgEl.textContent = '选择题至少需要2个选项';
             return;
         }
-        if (type === 'choice') {
-            const opts = optionsText.split('\n').filter(o => o.trim());
-            if (opts.length < 2) {
-                msgEl.textContent = '选择题至少需要2个选项';
-                return;
-            }
+    }
+
+    try {
+        const user = getCurrentUser();
+        if (!user) { toast('请先登录', 'error'); return; }
+
+        // 显示加载状态
+        msgEl.textContent = '⏳ 正在上传图片并提交...';
+
+        // ============================================================
+        // 图片上传：将文件上传到 Supabase Storage，返回 URL
+        // ============================================================
+        async function uploadImage(file) {
+    if (!file) return '';
+    
+    // 生成安全文件名（只含字母数字和扩展名）
+    const ext = file.name.split('.').pop() || 'jpg';
+    const fileName = `${uid()}.${ext}`;
+    
+    console.log('📤 上传图片:', fileName);
+    
+    const { data, error } = await supabaseClient.storage
+        .from('question-images')
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+        });
+    
+    if (error) {
+        console.error('图片上传失败:', error);
+        throw new Error('图片上传失败：' + error.message);
+    }
+    
+    // 获取公开访问 URL
+    const { data: urlData } = supabaseClient.storage
+        .from('question-images')
+        .getPublicUrl(fileName);
+    
+    console.log('✅ 图片上传成功，URL:', urlData.publicUrl);
+    return urlData.publicUrl;
+}
+
+        // 获取上传的图片
+        const imageFile = document.getElementById('addImage').files[0];
+        const answerImageFile = document.getElementById('addAnswerImage').files[0];
+
+        // 上传图片，获取 URL
+        const imageUrl = await uploadImage(imageFile);
+        const answerImageUrl = await uploadImage(answerImageFile);
+
+        console.log('📤 图片上传结果:');
+        console.log('  电路图 URL:', imageUrl || '无');
+        console.log('  答案图 URL:', answerImageUrl || '无');
+
+        // 构造新题目（数据库中只存 URL，不存 Base64）
+        const newQ = {
+            id: uid(),
+            type: type,
+            title: title,
+            content: content,
+            options: type === 'choice' ? optionsText.split('\n').filter(o => o.trim()) : [],
+            answer: answer,
+            answerimage: answerImageUrl || '',
+            image: imageUrl || '',
+            authorid: user.id,
+            authorname: user.name,
+            authorrole: user.role,
+            status: user.role === 'teacher' || user.role === 'admin' ? 'approved' : 'pending',
+            createtime: Date.now(),
+            updatetime: Date.now(),
+            rejectreason: ''
+        };
+
+        // 插入数据库
+        const { error } = await supabaseClient
+            .from('questions')
+            .insert(newQ);
+
+        if (error) {
+            console.error('❌ 提交失败:', error);
+            msgEl.textContent = '提交失败：' + error.message;
+            return;
         }
 
-        try {
-            const user = getCurrentUser();
-            if (!user) { toast('请先登录', 'error'); return; }
-            const qs = await DB.getQuestions();
-            const newQ = {
-                id: uid(),
-                type,
-                title,
-                content,
-                options: type === 'choice' ? optionsText.split('\n').filter(o => o.trim()) : [],
-                answer,
-                answerimage: '',
-                image: '',
-                authorid: user.id,
-                authorname: user.name,
-                authorrole: user.role,
-                status: user.role === 'teacher' || user.role === 'admin' ? 'approved' : 'pending',
-                createtime: Date.now(),
-                updatetime: Date.now(),
-                rejectreason: ''
-            };
-            qs.push(newQ);
-            await DB.setQuestions(qs);
-            toast('✅ 题目提交成功！' + (user.role === 'student' ? ' 等待老师审核。' : ''), 'success');
-            msgEl.textContent = '';
-            document.getElementById('addForm').reset();
-            navigateTo('browse');
-        } catch (e) {
-            msgEl.textContent = '提交失败：' + e.message;
-        }
-    });
+        console.log('✅ 提交成功');
+        toast('✅ 题目提交成功！' + (user.role === 'student' ? ' 等待老师审核。' : ''), 'success');
+        msgEl.textContent = '';
+        document.getElementById('addForm').reset();
+        document.getElementById('addImagePreview').classList.add('hidden');
+        document.getElementById('addAnswerImagePreview').classList.add('hidden');
+        navigateTo('browse');
+
+    } catch (e) {
+        console.error('❌ 提交异常:', e);
+        msgEl.textContent = '提交失败：' + e.message;
+    }
+});
+    
 // ============================================================
 // 个人信息表单提交事件
 // ============================================================
@@ -2754,19 +3104,45 @@ document.getElementById('profileForm').addEventListener('submit', async function
     });
 
     // ============================================================
+
+document.getElementById('myFilterType').addEventListener('change', () => {
+    myPage = 1;  // 重置到第一页
+    refreshMy();
+});
+document.getElementById('myFilterStatus').addEventListener('change', () => {
+    myPage = 1;
+    refreshMy();
+});
+
+
+
+
+
     // 其他事件绑定
     // ============================================================
-    document.querySelectorAll('.auth-tabs button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.auth-tabs button').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            const tab = this.dataset.tab;
-            document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
-            document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
-            document.getElementById('loginError').textContent = '';
-            document.getElementById('registerError').textContent = '';
-        });
+    document.querySelectorAll('.sidebar .nav a').forEach(el => {
+    el.addEventListener('click', function(e) {
+        e.preventDefault();
+        const page = this.dataset.page;
+        if (page === 'review' && !(isTeacher() || isAdmin())) {
+            toast('仅老师或管理员可访问审核管理', 'error');
+            return;
+        }
+        if (page === 'stats' && !(isTeacher() || isAdmin())) {
+            toast('仅老师或管理员可查看统计', 'error');
+            return;
+        }
+        if (page === 'users' && !isAdmin()) {
+            toast('仅管理员可访问用户管理', 'error');
+            return;
+        }
+        if (page === 'export' && !isAdmin()) {
+            toast('仅管理员可导出数据', 'error');
+            return;
+        }
+        navigateTo(page);
     });
+});
 
     document.getElementById('regRole').addEventListener('change', function() {
         const isStudent = this.value === 'student';
