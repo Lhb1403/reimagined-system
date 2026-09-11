@@ -2334,27 +2334,24 @@ async function handleDelete(id) {
         canDelete = (q.status !== 'approved');
     }
 
-    let actionsHtml = '';
-    if (canEdit || canDelete) {
-        actionsHtml = '<div class="q-actions">';
-        if (canEdit) {
-            actionsHtml += `<button class="btn btn-primary btn-sm" onclick="openEditModal('${q.id}')">✏️ 编辑</button>`;
-        }
-        if (canDelete) {
-            actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>`;
-        }
-        if ((isTeacherUser || isAdminUser) && q.status === 'pending') {
-            actionsHtml += `<button class="btn btn-success btn-sm" onclick="handleReview('${q.id}','approved')">✅ 通过</button>`;
-            actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleReview('${q.id}','rejected')">❌ 拒绝</button>`;
-        }
-        actionsHtml += '</div>';
-    } else if (isOwner && q.status === 'approved') {
-        actionsHtml = `
-            <div class="q-actions">
-                <span style="font-size:12px;color:var(--gray);">🔒 已通过审核，不可删除</span>
-            </div>
-        `;
+   let actionsHtml = '';
+if (canDelete) {
+    actionsHtml = '<div class="q-actions">';
+    if (canDelete) {
+        actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>`;
     }
+    if ((isTeacherUser || isAdminUser) && q.status === 'pending') {
+        actionsHtml += `<button class="btn btn-success btn-sm" onclick="handleReview('${q.id}','approved')">✅ 通过</button>`;
+        actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleReview('${q.id}','rejected')">❌ 拒绝</button>`;
+    }
+    actionsHtml += '</div>';
+} else if (isOwner && q.status === 'approved') {
+    actionsHtml = `
+        <div class="q-actions">
+            <span style="font-size:12px;color:var(--gray);">🔒 已通过审核，不可删除</span>
+        </div>
+    `;
+}
 
 // ========== 拼接卡片 ==========
            html += `
@@ -2487,24 +2484,17 @@ async function handleDelete(id) {
             }
 
             let actionsHtml = '';
-            if (canEdit || canDelete) {
-                actionsHtml = '<div class="q-actions">';
-                if (canEdit) {
-                    actionsHtml += `<button class="btn btn-primary btn-sm" onclick="openEditModal('${q.id}')">✏️ 编辑</button>`;
-                }
-                if (canDelete) {
-                    actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>`;
-                }
-                actionsHtml += '</div>';
-            } else if (isOwner && q.status === 'approved') {
-                // 学生看到已通过题目时，显示锁定提示
-                actionsHtml = `
-                    <div class="q-actions">
-                        <span style="font-size:12px;color:var(--gray);">🔒 已通过审核，不可删除</span>
-                    </div>
-                `;
-            }
-
+if (canDelete) {
+    actionsHtml = '<div class="q-actions">';
+    actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>`;
+    actionsHtml += '</div>';
+} else if (isOwner && q.status === 'approved') {
+    actionsHtml = `
+        <div class="q-actions">
+            <span style="font-size:12px;color:var(--gray);">🔒 已通过审核，不可删除</span>
+        </div>
+    `;
+}
  // ========== 拼接卡片 ==========
             html += `
                 <div class="question-card">
