@@ -2167,6 +2167,75 @@ async function exportData(type) {
         navigateTo('browse');
     }
 
+
+// ============================================================
+// 删除题目（权限控制）
+// 管理员/老师：可删除任何题目
+// 学生：只能删除自己未通过的题目
+// ============================================================
+async function handleDelete(id) {
+    const user = getCurrentUser();
+    if (!user) { toast('请先登录', 'error'); return; }
+
+    try {
+        // 获取题目信息
+        const qs = await DB.getQuestions();
+        const q = qs.find(item => item.id === id);
+        if (!q) { toast('题目不存在', 'error'); return; }
+
+        const isOwner = q.authorid === user.id;
+        const isAdminUser = isAdmin();
+        const isTeacherUser = isTeacher();
+
+        // ========== 权限判断 ==========
+        // 1. 学生只能删除自己“未通过”的题目
+        if (!isAdminUser && !isTeacherUser && isOwner && q.status === 'approved') {
+            toast('已通过审核的题目不能删除，请联系老师', 'warning');
+            return;
+        }
+
+        // 2. 非本人、非老师、非管理员，不能删除
+        if (!isOwner && !isAdminUser && !isTeacherUser) {
+            toast('没有权限删除此题目', 'error');
+            return;
+        }
+
+        // 3. 二次确认
+        if (!confirm('确定要删除这道题目吗？此操作不可恢复！')) return;
+
+        // ========== 删除数据库记录 ==========
+        const { error } = await supabaseClient
+            .from('questions')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('删除失败:', error);
+            toast('删除失败：' + error.message, 'error');
+            return;
+        }
+
+        // ========== 如果有图片，同步删除 Storage 中的文件（可选） ==========
+        if (q.image && q.image.includes('question-images')) {
+            const fileName = q.image.split('/').pop();
+            await supabaseClient.storage.from('question-images').remove([fileName]);
+        }
+        if (q.answerimage && q.answerimage.includes('question-images')) {
+            const fileName = q.answerimage.split('/').pop();
+            await supabaseClient.storage.from('question-images').remove([fileName]);
+        }
+
+        toast('🗑️ 题目已删除', 'warning');
+        refreshAll();
+    } catch (e) {
+        console.error('删除异常:', e);
+        toast('删除失败：' + e.message, 'error');
+    }
+}
+
+
+
+
     // ============================================================
     // 刷新函数
     // ============================================================
@@ -2250,24 +2319,63 @@ async function exportData(type) {
                 statusHtml = `<span class="q-status ${cls}">${label}</span>`;
             }
 
-            html += `
-                <div class="question-card">
-                    <div class="q-header">
-                        <span class="q-type">${typeLabel(q.type)}</span>
-                        ${statusHtml}
-                    </div>
-                    <div class="q-title">${q.title || '（无标题）'}</div>
-                    <div class="q-content">${q.content || '（无内容）'}</div>
-                    ${optionsHtml}
-                    ${answerHtml}
-                    ${imageHtml}
-                    <div class="q-meta">
-                        <span>👤 ${q.authorname || '未知'} (${q.authorrole || '学生'})</span>
-                        <span>📅 ${q.createtime ? formatDate(q.createtime) : '未知时间'}</span>
-                    </div>
-                </div>
-            `;
-        });
+// ========== 操作按钮（权限判断） ← 新增 ==========
+    const currentUser = getCurrentUser();
+    const isOwner = currentUser && q.authorid === currentUser.id;
+    const isAdminUser = isAdmin();
+    const isTeacherUser = isTeacher();
+
+    const canEdit = isOwner || isAdminUser || isTeacherUser;
+
+    let canDelete = false;
+    if (isAdminUser || isTeacherUser) {
+        canDelete = true;
+    } else if (isOwner) {
+        canDelete = (q.status !== 'approved');
+    }
+
+    let actionsHtml = '';
+    if (canEdit || canDelete) {
+        actionsHtml = '<div class="q-actions">';
+        if (canEdit) {
+            actionsHtml += `<button class="btn btn-primary btn-sm" onclick="openEditModal('${q.id}')">✏️ 编辑</button>`;
+        }
+        if (canDelete) {
+            actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>`;
+        }
+        if ((isTeacherUser || isAdminUser) && q.status === 'pending') {
+            actionsHtml += `<button class="btn btn-success btn-sm" onclick="handleReview('${q.id}','approved')">✅ 通过</button>`;
+            actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleReview('${q.id}','rejected')">❌ 拒绝</button>`;
+        }
+        actionsHtml += '</div>';
+    } else if (isOwner && q.status === 'approved') {
+        actionsHtml = `
+            <div class="q-actions">
+                <span style="font-size:12px;color:var(--gray);">🔒 已通过审核，不可删除</span>
+            </div>
+        `;
+    }
+
+// ========== 拼接卡片 ==========
+           html += `
+        <div class="question-card">
+            <div class="q-header">
+                <span class="q-type">${typeLabel(q.type)}</span>
+                ${statusHtml}
+            </div>
+            <div class="q-title">${q.title || '（无标题）'}</div>
+            <div class="q-content">${q.content || '（无内容）'}</div>
+            ${optionsHtml}
+            ${answerHtml}
+            ${imageHtml}
+            <div class="q-meta">
+                <span>👤 ${q.authorname || '未知'} (${q.authorrole || '学生'})</span>
+                <span>📅 ${q.createtime ? formatDate(q.createtime) : '未知时间'}</span>
+            </div>
+            ${actionsHtml}
+        </div>
+    `;
+});
 
         container.innerHTML = html;
 
@@ -2359,6 +2467,45 @@ async function exportData(type) {
                 statusHtml = `<span class="q-status ${cls}">${label}</span>`;
             }
             
+// ========== 操作按钮（权限判断） ==========
+            const currentUser = getCurrentUser();
+            const isOwner = currentUser && q.authorid === currentUser.id;
+            const isAdminUser = isAdmin();
+            const isTeacherUser = isTeacher();
+
+            // 编辑权限：本人或老师/管理员
+            const canEdit = isOwner || isAdminUser || isTeacherUser;
+
+            // 删除权限：
+            // - 管理员/老师：可删任何题目
+            // - 学生：仅可删未通过的题目
+            let canDelete = false;
+            if (isAdminUser || isTeacherUser) {
+                canDelete = true;
+            } else if (isOwner) {
+                canDelete = (q.status !== 'approved');
+            }
+
+            let actionsHtml = '';
+            if (canEdit || canDelete) {
+                actionsHtml = '<div class="q-actions">';
+                if (canEdit) {
+                    actionsHtml += `<button class="btn btn-primary btn-sm" onclick="openEditModal('${q.id}')">✏️ 编辑</button>`;
+                }
+                if (canDelete) {
+                    actionsHtml += `<button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>`;
+                }
+                actionsHtml += '</div>';
+            } else if (isOwner && q.status === 'approved') {
+                // 学生看到已通过题目时，显示锁定提示
+                actionsHtml = `
+                    <div class="q-actions">
+                        <span style="font-size:12px;color:var(--gray);">🔒 已通过审核，不可删除</span>
+                    </div>
+                `;
+            }
+
+ // ========== 拼接卡片 ==========
             html += `
                 <div class="question-card">
                     <div class="q-header">
@@ -2373,9 +2520,11 @@ async function exportData(type) {
                     <div class="q-meta">
                         <span>📅 ${q.createtime ? formatDate(q.createtime) : '未知时间'}</span>
                     </div>
+                    ${actionsHtml}
                 </div>
             `;
         });
+
         container.innerHTML = html;
         
         // 5. 渲染分页控件
@@ -2511,6 +2660,7 @@ if (q.image && (q.image.startsWith('http') || q.image.startsWith('data:image')))
                     <div class="q-actions">
                         <button class="btn btn-success btn-sm" onclick="handleReview('${q.id}','approved')">✅ 通过</button>
                         <button class="btn btn-danger btn-sm" onclick="handleReview('${q.id}','rejected')">❌ 拒绝</button>
+                        <button class="btn btn-danger btn-sm" onclick="handleDelete('${q.id}')">🗑️ 删除</button>
                     </div>
                 </div>
             `;
@@ -3168,7 +3318,31 @@ document.getElementById('profileForm').addEventListener('submit', async function
     }
 });
     // ============================================================
-    // 登录和注册表单事件
+   
+
+// ============================================================
+// 认证标签切换（登录/注册）
+// ============================================================
+document.querySelectorAll('.auth-tabs button').forEach(btn => {
+    btn.addEventListener('click', function() {
+        console.log('🔄 切换标签:', this.dataset.tab);
+        // 更新按钮激活状态
+        document.querySelectorAll('.auth-tabs button').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        // 切换表单显示
+        const tab = this.dataset.tab;
+        document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+        document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+        // 清空错误提示
+        document.getElementById('loginError').textContent = '';
+        document.getElementById('registerError').textContent = '';
+    });
+});
+
+
+
+
+ // 登录和注册表单事件
     // ============================================================
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
