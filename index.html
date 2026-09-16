@@ -1630,6 +1630,21 @@
 </div>
 
 
+<!-- 备份列表 -->
+<div style="background:#fff; padding:20px; border-radius:10px; box-shadow:var(--shadow); margin-top:20px;">
+    <h4>☁️ 云端备份列表</h4>
+    <p style="color:var(--gray); font-size:14px; margin:8px 0;">
+        每次审核通过后，系统会自动备份题目到 Supabase Storage。
+    </p>
+    <div style="display:flex; gap:10px; margin-bottom:12px;">
+        <button class="btn btn-primary btn-sm" onclick="listBackups()">🔄 刷新列表</button>
+        <span id="backupCount" style="font-size:14px; color:var(--gray); line-height:32px;"></span>
+    </div>
+    <div id="backupList" style="font-size:14px; max-height:400px; overflow-y:auto;">
+        <span style="color:var(--gray);">点击「刷新列表」加载备份文件。</span>
+    </div>
+</div>
+
                 <!-- ===== PAGE: PROFILE ===== -->
                <!-- ===== PAGE: PROFILE ===== -->
 <div id="pageProfile" class="page-content hidden">
@@ -1987,6 +2002,145 @@ async function exportData(type) {
         toast('❌ 导出失败：' + e.message, 'error');
     }
 }
+
+// ============================================================
+// 查看备份列表
+// ============================================================
+async function listBackups() {
+    const container = document.getElementById('backupList');
+    const countEl = document.getElementById('backupCount');
+    
+    if (!isAdmin()) {
+        container.innerHTML = '<span style="color:var(--danger);">仅管理员可查看备份</span>';
+        return;
+    }
+    
+    container.innerHTML = '⏳ 正在加载备份列表...';
+    countEl.textContent = '';
+    
+    try {
+        // 获取 backups 桶中的文件列表，按创建时间倒序
+        const { data, error } = await supabaseClient.storage
+            .from('backups')
+            .list('', {
+                limit: 100,
+                offset: 0,
+                sortBy: { column: 'name', order: 'desc' }
+            });
+        
+        if (error) {
+            console.error('获取备份列表失败:', error);
+            container.innerHTML = `<span style="color:var(--danger);">加载失败：${error.message}</span>`;
+            return;
+        }
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<span style="color:var(--gray);">暂无备份文件</span>';
+            countEl.textContent = '共 0 个备份';
+            return;
+        }
+        
+        // 过滤掉占位文件（Supabase 有时会返回 .emptyFolderPlaceholder）
+        const files = data.filter(f => f.name && !f.name.startsWith('.'));
+        
+        countEl.textContent = `共 ${files.length} 个备份`;
+        
+        // 生成列表 HTML
+        let html = '<table style="width:100%; border-collapse:collapse;">';
+        html += '<thead><tr style="background:#f5f7fa;">';
+        html += '<th style="padding:8px; text-align:left;">文件名</th>';
+        html += '<th style="padding:8px; text-align:right;">大小</th>';
+        html += '<th style="padding:8px; text-align:center;">操作</th>';
+        html += '</tr></thead><tbody>';
+        
+        files.forEach(file => {
+            const size = file.metadata?.size 
+                ? (file.metadata.size / 1024).toFixed(1) + ' KB' 
+                : '-';
+            
+            // 从文件名中提取时间（格式：approved_2025-01-01T12-00-00-000Z_xxx.json）
+            let timeStr = '';
+            const match = file.name.match(/approved_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})/);
+            if (match) {
+                timeStr = match[1].replace('T', ' ').replace(/-/g, ':').slice(0, 19);
+            }
+            
+            html += `<tr style="border-bottom:1px solid #eee;">`;
+            html += `<td style="padding:8px;">${file.name}<br><span style="font-size:12px;color:var(--gray);">${timeStr}</span></td>`;
+            html += `<td style="padding:8px; text-align:right;">${size}</td>`;
+            html += `<td style="padding:8px; text-align:center;">`;
+            html += `<button class="btn btn-primary btn-sm" onclick="downloadBackup('${file.name}')">下载</button> `;
+            html += `<button class="btn btn-danger btn-sm" onclick="deleteBackup('${file.name}')">删除</button>`;
+            html += `</td>`;
+            html += `</tr>`;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        
+    } catch (e) {
+        console.error('备份列表异常:', e);
+        container.innerHTML = `<span style="color:var(--danger);">异常：${e.message}</span>`;
+    }
+}
+
+// ============================================================
+// 下载备份文件
+// ============================================================
+async function downloadBackup(fileName) {
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from('backups')
+            .download(fileName);
+        
+        if (error) {
+            toast('下载失败：' + error.message, 'error');
+            return;
+        }
+        
+        // 创建下载链接
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast('✅ 下载成功', 'success');
+    } catch (e) {
+        console.error('下载异常:', e);
+        toast('下载失败：' + e.message, 'error');
+    }
+}
+
+// ============================================================
+// 删除备份文件
+// ============================================================
+async function deleteBackup(fileName) {
+    if (!confirm(`确定删除备份文件 ${fileName} 吗？`)) return;
+    
+    try {
+        const { error } = await supabaseClient.storage
+            .from('backups')
+            .remove([fileName]);
+        
+        if (error) {
+            toast('删除失败：' + error.message, 'error');
+            return;
+        }
+        
+        toast('🗑️ 备份已删除', 'warning');
+        listBackups(); // 刷新列表
+    } catch (e) {
+        console.error('删除异常:', e);
+        toast('删除失败：' + e.message, 'error');
+    }
+}
+
+
+
     // ============================================================
     // AUTH
     // ============================================================
@@ -2134,7 +2288,7 @@ async function exportData(type) {
         else if (page === 'review') refreshReview();
         else if (page === 'stats') refreshStats();
         else if (page === 'users') refreshUsers();
-        else if (page === 'export') { /* 导出页面无需刷新数据 */ }
+       else if (page === 'export') { listBackups(); }
         else if (page === 'profile') refreshProfile();
 
         updateReviewBadge();
@@ -3070,26 +3224,91 @@ async function deleteUser(userId) {
     // ============================================================
     // 审核处理
     // ============================================================
-    window.handleReview = async function(id, status) {
-        let reason = '';
-        if (status === 'rejected') {
-            reason = prompt('请输入拒绝原因：') || '未通过审核';
-            if (reason === null) return;
+   window.handleReview = async function(id, status) {
+    let reason = '';
+    if (status === 'rejected') {
+        reason = prompt('请输入拒绝原因：') || '未通过审核';
+        if (reason === null) return;
+    }
+    try {
+        // 1. 获取题目原始数据（用于备份）
+        const qs = await DB.getQuestions();
+        const q = qs.find(item => item.id === id);
+        if (!q) { toast('题目不存在', 'error'); return; }
+
+        // 2. 直接更新单条记录
+        const { error } = await supabaseClient
+            .from('questions')
+            .update({
+                status: status,
+                rejectreason: reason || '',
+                updatetime: Date.now()
+            })
+            .eq('id', id);
+
+        if (error) {
+            toast('审核失败：' + error.message, 'error');
+            return;
         }
-        try {
-            const qs = await DB.getQuestions();
-            const idx = qs.findIndex(q => q.id === id);
-            if (idx === -1) { toast('题目不存在', 'error'); return; }
-            qs[idx].status = status;
-            qs[idx].rejectreason = reason || '';
-            qs[idx].updatetime = Date.now();
-            await DB.setQuestions(qs);
-            toast(status === 'approved' ? '✅ 审核通过' : '❌ 已拒绝', status === 'approved' ? 'success' : 'error');
-            refreshAll();
-        } catch (e) {
-            toast('审核失败：' + e.message, 'error');
+
+        // 3. 如果审核通过，自动备份
+        if (status === 'approved') {
+            await backupApprovedQuestion({ ...q, status: 'approved', rejectreason: '', updatetime: Date.now() });
+            toast('✅ 审核通过，已自动备份', 'success');
+        } else {
+            toast('❌ 已拒绝', 'error');
         }
-    };
+
+        refreshAll();
+    } catch (e) {
+        console.error('审核异常:', e);
+        toast('审核失败：' + e.message, 'error');
+    }
+};
+
+// ============================================================
+// 自动备份已审核通过的题目
+// ============================================================
+async function backupApprovedQuestion(question) {
+    try {
+        // 生成备份文件名：包含时间戳和题目ID
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-');
+        const fileName = `approved_${timestamp}_${question.id}.json`;
+
+        // 构建备份内容
+        const backupData = {
+            backupTime: now.toISOString(),
+            backupType: 'approved_question',
+            question: question
+        };
+
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+
+        // 上传到 Supabase Storage
+        const { data, error } = await supabaseClient.storage
+            .from('backups')
+            .upload(fileName, blob, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: 'application/json'
+            });
+
+        if (error) {
+            console.error('备份失败:', error);
+            return { success: false, message: error.message };
+        }
+
+        console.log('✅ 已备份题目:', fileName);
+        return { success: true, fileName };
+    } catch (e) {
+        console.error('备份异常:', e);
+        return { success: false, message: e.message };
+    }
+}
+
+
 
     // ============================================================
     // 添加题目表单
