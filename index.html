@@ -1434,7 +1434,12 @@
                     <li><a data-page="my"><span class="icon">📝</span> 我的题目</a></li>
                     <li id="navReview" class="hidden"><a data-page="review"><span class="icon">🔍</span> 审核管理 <span class="badge" id="reviewBadge">0</span></a></li>
                     <li id="navStats" class="hidden"><a data-page="stats"><span class="icon">📊</span> 学生统计</a></li>
-                    <li id="navUsers" class="hidden"><a data-page="users"><span class="icon">👥</span> 用户管理</a></li>
+                   <li id="navUsers" class="hidden">
+    <a data-page="users">
+        <span class="icon">👥</span> 用户管理
+        <span class="badge" id="userBadge">0</span>
+    </a>
+</li>
                     <li id="navExport" class="hidden">
                          <a data-page="export"><span class="icon">📤</span> 数据导出</a>
                     </li>
@@ -1744,89 +1749,61 @@
     // ============================================================
     // DATA LAYER - Cloud Sync Version
     // ============================================================
-    const DB = {
-        async getUsers() {
-            console.log('📥 正在获取用户列表...');
-            const { data, error } = await supabaseClient
-                .from('users')
-                .select('*')
-                .order('username');
-            if (error) {
-                console.error('❌ 获取用户失败:', error);
-                throw error;
-            }
-            console.log('✅ 获取用户成功，共', data.length, '条');
-            return data;
-        },
-
-        async setUsers(users) {
-            console.log('📤 正在保存用户列表...');
-            await supabaseClient.from('users').delete().neq('id', '');
-            if (users.length > 0) {
-                const { error } = await supabaseClient.from('users').insert(users);
-                if (error) throw error;
-            }
-            console.log('✅ 用户列表保存成功');
-        },
-
-        async getQuestions() {
-            const { data, error } = await supabaseClient
-                .from('questions')
-                .select('*')
-                .order('createtime', { ascending: false });
-            if (error) throw error;
-            return data;
-        },
-
-        async setQuestions(questions) {
-            await supabaseClient.from('questions').delete().neq('id', '');
-            if (questions.length > 0) {
-                const { error } = await supabaseClient.from('questions').insert(questions);
-                if (error) throw error;
-            }
-        },
-
-        getCurrentUser() {
-            const data = JSON.parse(sessionStorage.getItem('ee_current_user'));
-            return data || null;
-        },
-        setCurrentUser(user) {
-            sessionStorage.setItem('ee_current_user', JSON.stringify(user));
-        },
-        clearCurrentUser() {
-            sessionStorage.removeItem('ee_current_user');
+   const DB = {
+    async getUsers() {
+        console.log('📥 正在获取用户列表...');
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('*')
+            .order('username');
+        if (error) {
+            console.error('❌ 获取用户失败:', error);
+            throw error;
         }
-    };
+        console.log('✅ 获取用户成功，共', data.length, '条');
+        return data;
+    },
+
+    // ❌ setUsers 已删除，改用单条操作
+
+    async getQuestions() {
+        const { data, error } = await supabaseClient
+            .from('questions')
+            .select('*')
+            .order('createtime', { ascending: false });
+        if (error) throw error;
+        return data;
+    },
+
+    // ❌ setQuestions 已删除，改用单条操作
+
+    getCurrentUser() {
+        const data = JSON.parse(sessionStorage.getItem('ee_current_user'));
+        return data || null;
+    },
+    setCurrentUser(user) {
+        sessionStorage.setItem('ee_current_user', JSON.stringify(user));
+    },
+    clearCurrentUser() {
+        sessionStorage.removeItem('ee_current_user');
+    }
+};
 
     // ============================================================
     // INIT CLOUD
     // ============================================================
     async function initCloud() {
-        try {
-            console.log('🚀 正在连接云数据库...');
-            const users = await DB.getUsers();
-            console.log('✅ 云数据库连接成功，用户数：', users.length);
-
-            if (users.length === 0) {
-                console.log('📝 初始化默认用户...');
-                await DB.setUsers([
-                    { id: 'u1', username: 'admin', password: '123456', name: '系统管理员', role: 'admin', degree: '',
-                        unit: '', qq: '', phone: '', studentId: '', class: '', status: 'approved', reject_reason: ''  },
-                    { id: 'u2', username: 'teacher', password: '123456', name: '张老师', role: 'teacher',
-                        degree: '博士', unit: 'XX大学', qq: '12345678', phone: '13800000000', studentId: '',
-                        class: '' },
-                    { id: 'u3', username: 'student', password: '123456', name: '李同学', role: 'student',
-                        degree: '', unit: '', qq: '', phone: '', studentId: '2024001', class: '电子工程1班' }
-                ]);
-                console.log('✅ 默认用户已创建');
-            }
-            return true;
-        } catch (e) {
-            console.error('❌ 云数据库连接失败：', e);
-            alert('⚠️ 无法连接云数据库，请检查网络和配置\n\n错误信息：' + e.message);
-            return false;
-        }
+    try {
+        console.log('🚀 正在连接云数据库...');
+        const users = await DB.getUsers();
+        console.log('✅ 云数据库连接成功，用户数：', users.length);
+        return true;
+    } catch (e) {
+        console.error('❌ 云数据库连接失败：', e);
+        alert('⚠️ 无法连接云数据库，请检查网络和配置\n\n错误信息：' + e.message);
+        return false;
     }
+}
 
 // 上传限制配置
 // ============================================================
@@ -2221,10 +2198,21 @@ async function deleteBackup(fileName) {
 
     async function register(name, username, password, role, studentId, cls) {
     try {
-        const users = await DB.getUsers();
-        if (users.find(u => u.username === username)) {
+        // 1. 检查用户名是否已存在
+        const { data: existing, error: checkError } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .maybeSingle();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+            throw checkError;
+        }
+        if (existing) {
             return { success: false, message: '用户名已存在' };
         }
+
+        // 2. 校验
         if (password.length < 6) {
             return { success: false, message: '密码至少6位' };
         }
@@ -2234,13 +2222,13 @@ async function deleteBackup(fileName) {
             }
         }
 
- // 密码哈希
+        // 3. 密码哈希
         const hashedPassword = await hashPassword(password);
 
         const newUser = {
             id: uid(),
             username,
-          password: hashedPassword,   // 存储哈希值
+            password: hashedPassword,
             name,
             role,
             degree: '',
@@ -2249,14 +2237,24 @@ async function deleteBackup(fileName) {
             phone: '',
             studentid: studentId || '',
             class: cls || '',
-            status: 'pending',        // 新增：默认待审核
-            reject_reason: ''         // 新增
+            status: 'pending',
+            reject_reason: ''
         };
-        users.push(newUser);
-        await DB.setUsers(users);
+
+        // 4. 直接插入单条记录（不再全量覆盖）
+        const { error } = await supabaseClient
+            .from('users')
+            .insert(newUser);
+
+        if (error) {
+            console.error('❌ 注册失败:', error);
+            return { success: false, message: '注册失败：' + error.message };
+        }
+
+        console.log('✅ 注册成功');
         return { success: true, user: newUser };
     } catch (e) {
-        console.error('❌ 注册失败:', e);
+        console.error('❌ 注册异常:', e);
         return { success: false, message: '注册失败：' + e.message };
     }
 }
@@ -2940,6 +2938,7 @@ async function approveUser(userId) {
     } else {
         toast('✅ 用户已审核通过', 'success');
         refreshUsers();
+        updateUserBadge();  // ← 添加这行
     }
 }
 
@@ -2962,11 +2961,12 @@ async function rejectUser(userId) {
     } else {
         toast('❌ 用户已拒绝', 'warning');
         refreshUsers();
+        updateUserBadge();  // ← 添加这行
     }
 }
 
 
-    async function refreshUsers() {
+   async function refreshUsers() {
     const container = document.getElementById('usersContainer');
     if (!isAdmin()) {
         container.innerHTML = '<div class="empty-state"><div class="icon">🚫</div><h4>无访问权限</h4></div>';
@@ -3031,19 +3031,26 @@ async function rejectUser(userId) {
 
             html += `
                 <tr>
-                    <td>${u.username}</td>
-                    <td><strong>${u.name}</strong></td>
-                    <td><span class="role-badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
-                    <td><span class="q-status ${statusClass}">${statusText}</span></td>
-                    <td>${u.studentid || '-'}</td>
-                    <td>${u.class || '-'}</td>
-                    <td>${actions}</td>
+                    <td data-label="用户名">${u.username}</td>
+                    <td data-label="姓名"><strong>${u.name}</strong></td>
+                    <td data-label="角色"><span class="role-badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
+                    <td data-label="状态"><span class="q-status ${statusClass}">${statusText}</span></td>
+                    <td data-label="学号">${u.studentid || '-'}</td>
+                    <td data-label="班级">${u.class || '-'}</td>
+                    <td data-label="操作">${actions}</td>
                 </tr>
             `;
         });
         html += `</tbody></table>`;
         container.innerHTML = html;
+
+        // ============================================================
+        // 更新用户管理徽章（待审核学生数量）
+        // ============================================================
+        await updateUserBadge();
+
     } catch (e) {
+        console.error('加载用户列表失败:', e);
         container.innerHTML = `<div class="empty-state"><div class="icon">❌</div><h4>加载失败</h4><p>${e.message}</p></div>`;
     }
 }
@@ -3182,43 +3189,70 @@ async function deleteUser(userId) {
 }
 
     async function updateReviewBadge() {
-        const badge = document.getElementById('reviewBadge');
-        try {
-            const qs = await DB.getQuestions();
-            const count = qs.filter(q => q.status === 'pending').length;
-            badge.textContent = count;
-            const navReview = document.getElementById('navReview');
-            const navStats = document.getElementById('navStats');
-            const navUsers = document.getElementById('navUsers');
-            if (isAdmin()) {
-                navReview.classList.remove('hidden');
-                navStats.classList.remove('hidden');
-                navUsers.classList.remove('hidden');
-            } else if (isTeacher()) {
-                navReview.classList.remove('hidden');
-                navStats.classList.remove('hidden');
-                navUsers.classList.add('hidden');
-            } else {
-                navReview.classList.add('hidden');
-                navStats.classList.add('hidden');
-                navUsers.classList.add('hidden');
-            }
+    const badge = document.getElementById('reviewBadge');
+    try {
+        const qs = await DB.getQuestions();
+        const count = qs.filter(q => q.status === 'pending').length;
+        badge.textContent = count;
+
+        const navReview = document.getElementById('navReview');
+        const navStats = document.getElementById('navStats');
+        const navUsers = document.getElementById('navUsers');
         const navExport = document.getElementById('navExport');
+
         if (isAdmin()) {
             navReview.classList.remove('hidden');
             navStats.classList.remove('hidden');
             navUsers.classList.remove('hidden');
             navExport.classList.remove('hidden');
+        } else if (isTeacher()) {
+            navReview.classList.remove('hidden');
+            navStats.classList.remove('hidden');
+            navUsers.classList.add('hidden');
+            navExport.classList.add('hidden');
         } else {
             navReview.classList.add('hidden');
             navStats.classList.add('hidden');
             navUsers.classList.add('hidden');
             navExport.classList.add('hidden');
-    }
-        } catch (e) {
-            console.error('更新审核徽章失败:', e);
         }
+
+        // ============================================================
+        // 更新用户管理徽章（待审核学生数量）
+        // ============================================================
+        await updateUserBadge();
+
+    } catch (e) {
+        console.error('更新审核徽章失败:', e);
     }
+}
+
+// ===========================================
+// 更新用户管理徽章（待审核用户数量）
+// ===========================================
+async function updateUserBadge() {
+    const badge = document.getElementById('userBadge');
+    if (!badge) return;
+
+    try {
+        const users = await DB.getUsers();
+        // 统计待审核用户数量（排除管理员和老师，只统计学生）
+        const pendingCount = users.filter(u =>
+            u.role === 'student' && u.status === 'pending'
+        ).length;
+
+        badge.textContent = pendingCount;
+
+        // 如果为 0，隐藏徽章
+        if (pendingCount === 0) {
+            badge.style.display = 'none';
+        } else {
+            badge.style.display = 'inline-block';
+        }
+    } catch (e) {
+        console.error('更新用户徽章失败:', e);
+    }
+}
 
     // ============================================================
     // 审核处理
@@ -3773,41 +3807,51 @@ document.getElementById('myFilterStatus').addEventListener('change', () => {
     // 初始化
     // ============================================================
     async function init() {
-        console.log('🚀 初始化系统...');
+    console.log('🚀 初始化系统...');
 
-        // 检查 Supabase 配置
-        if (!SUPABASE_KEY || SUPABASE_KEY === '您的 anon public 或 publishable 密钥') {
-            alert('⚠️ 请先配置 Supabase 密钥！\n\n在代码中找到 SUPABASE_KEY 变量，替换为您的实际密钥。');
-            console.error('❌ SUPABASE_KEY 未配置');
-            return;
-        }
-
-        // 初始化云数据库
-        const cloudReady = await initCloud();
-        if (!cloudReady) {
-            console.warn('⚠️ 云数据库初始化失败，请检查配置');
-        }
-
-        // 检查当前用户
-        const user = getCurrentUser();
-        if (user) {
-            showMain();
-            toast('✅ 云同步已连接', 'success');
-        } else {
-            showAuth();
-        }
-
-        // 自动刷新
-        setInterval(refreshAll, 15000);
-        console.log('⚡ 电工电子题库系统已启动（云同步版）');
-        console.log('📌 管理员: admin / 123456');
-        console.log('📌 老师: teacher / 123456');
-        console.log('📌 学生: student / 123456');
-        console.log('✅ 数据存储在 Supabase 云端，支持多设备同步');
+    // 检查 Supabase 配置
+    if (!SUPABASE_KEY || SUPABASE_KEY === '您的 anon public 或 publishable 密钥') {
+        alert('⚠️ 请先配置 Supabase 密钥！\n\n在代码中找到 SUPABASE_KEY 变量，替换为您的实际密钥。');
+        console.error('❌ SUPABASE_KEY 未配置');
+        return;
     }
 
-    // 启动
-    init();
+    // 初始化云数据库
+    const cloudReady = await initCloud();
+    if (!cloudReady) {
+        console.warn('⚠️ 云数据库初始化失败，请检查配置');
+        alert('⚠️ 无法连接云数据库，请检查网络或 Supabase 配置。');
+        return;
+    }
+
+    // 检查当前用户
+    const user = getCurrentUser();
+    if (user) {
+        showMain();
+        toast('✅ 云同步已连接', 'success');
+    } else {
+        showAuth();
+    }
+
+    // ============================================================
+    // 初始化徽章
+    // ============================================================
+    try {
+        await updateReviewBadge();   // 审核管理徽章
+        await updateUserBadge();     // 用户管理徽章
+    } catch (e) {
+        console.error('初始化徽章失败:', e);
+    }
+
+    // 自动刷新（每 15 秒）
+    setInterval(refreshAll, 15000);
+
+    console.log('⚡ 电工电子题库系统已启动（云同步版）');
+    console.log('✅ 数据存储在 Supabase 云端，支持多设备同步');
+}
+
+// 启动
+init();
 </script>
 </body>
 </html>
