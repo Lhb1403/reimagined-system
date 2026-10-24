@@ -2773,7 +2773,7 @@ async function changePassword(userId, oldPassword, newPassword) {
             let answerHtml = `<div class="q-answer-content" style="display:block;padding:10px 14px;background:#f0f7ff;border-radius:6px;margin-top:8px;">`;
             answerHtml += `<strong>📌 答案：</strong> ${q.answer || '（无文字答案）'}`;
            if (q.answerimage && (q.answerimage.startsWith('http') || q.answerimage.startsWith('data:image'))) {
-    answerContent += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
+    answerHtml += `<div class="answer-image"><img src="${q.answerimage}" alt="答案图片"></div>`;
 }
             answerHtml += `</div>`;
 
